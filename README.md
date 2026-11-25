@@ -16,7 +16,7 @@ Tested on Windows 11 with an **NVIDIA GeForce RTX 3050** (8 GB):
 | Prologue | playable from the cell to the boat chase: cell, cafeteria, robbery, police chase (wanted level, minimap), boat, binoculars |
 | Stability | 2 h 10 min+ in one session without a crash |
 | Frame rate | 4-5 fps in the world (the first run is slower while shaders translate; they are cached after that) |
-| Known problems | anything in shadow is black and bright scenes overexpose (the game's ray-traced lighting does not run yet); some blocky artifacts; boats sit low in the water |
+| Known problems | anything in shadow is black and bright scenes overexpose (the game's ray-traced lighting does not run yet); some blocky artifacts; boats sit low in the water (under fix)|
 
 ## Requirements
 
