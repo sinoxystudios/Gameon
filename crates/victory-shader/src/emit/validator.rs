@@ -2,7 +2,7 @@
 //! offline batch. Translated shaders do not need it: they carry the
 //! container hash we compute (`container::hash`).
 //!
-//! The DLL is found at `VICTORY_DXIL` if set, else the newest Windows SDK's
+//! The DLL is found at `SINOXY_DXIL` if set, else the newest Windows SDK's
 //! `bin\<version>\x64\dxil.dll`, else wherever `LoadLibrary` finds it.
 
 use std::ffi::c_void;
@@ -119,7 +119,7 @@ unsafe impl Send for Validator {}
 impl Validator {
     /// Where `dxil.dll` is looked for.
     pub fn default_path() -> Option<PathBuf> {
-        if let Some(p) = std::env::var_os("VICTORY_DXIL") {
+        if let Some(p) = std::env::var_os("SINOXY_DXIL") {
             return Some(p.into());
         }
         let kits = PathBuf::from(r"C:\Program Files (x86)\Windows Kits\10\bin");

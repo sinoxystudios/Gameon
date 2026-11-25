@@ -64,12 +64,12 @@ fn lock<T>(mutex: &std::sync::Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     mutex.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// Whether queues wait for fences. `VICTORY_QUEUE_WAIT=0`: they do not,
+/// Whether queues wait for fences. `SINOXY_QUEUE_WAIT=0`: they do not,
 /// and every submission runs when it is made (as before).
 #[cfg(windows)]
 fn waits() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_QUEUE_WAIT").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_QUEUE_WAIT").is_none_or(|v| v != "0"))
 }
 
 /// Whether a submission is held list by list: the lists before the first
@@ -83,12 +83,12 @@ fn waits() -> bool {
 /// (runs 27-30: 2.4-2.9 s from the last submission to the present call,
 /// 13-32 ms before waits were honoured; the frame's main graphics
 /// submissions, 88 lists, ran forced, the compute lists before them).
-/// On by default; `VICTORY_SPLIT_WAITS=0` holds whole submissions, as
+/// On by default; `SINOXY_SPLIT_WAITS=0` holds whole submissions, as
 /// before.
 #[cfg(windows)]
 fn split() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_SPLIT_WAITS").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_SPLIT_WAITS").is_none_or(|v| v != "0"))
 }
 
 /// Whether a list is cut into host lists at its waits for memory values
@@ -103,21 +103,21 @@ fn split() -> bool {
 /// each waited for a write behind the other's wait and only the present
 /// moved them, in the wrong order.
 /// On by default where waits are honoured list by list;
-/// `VICTORY_CUT_WAITS=0` holds whole lists, as before.
+/// `SINOXY_CUT_WAITS=0` holds whole lists, as before.
 #[cfg(windows)]
 pub(crate) fn cuts() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    waits() && split() && *ON.get_or_init(|| std::env::var_os("VICTORY_CUT_WAITS").is_none_or(|v| v != "0"))
+    waits() && split() && *ON.get_or_init(|| std::env::var_os("SINOXY_CUT_WAITS").is_none_or(|v| v != "0"))
 }
 
 /// Whether a present runs what queues still hold (on by default: a wait
-/// is not kept across frames). `VICTORY_WAIT_FORCE=0` keeps it held: for
+/// is not kept across frames). `SINOXY_WAIT_FORCE=0` keeps it held: for
 /// finding out whether the title's waits reach across its presents; a
 /// wait nothing ever meets then stops the title for good.
 #[cfg(windows)]
 fn forces() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WAIT_FORCE").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WAIT_FORCE").is_none_or(|v| v != "0"))
 }
 
 /// A submission to a queue whose lists are cut at their waits ([`cuts`]).

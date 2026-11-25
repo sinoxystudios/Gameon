@@ -145,7 +145,7 @@ type Kept = std::sync::Arc<Mutex<Vec<(String, emit::HostShader)>>>;
 
 /// The optional checks after emission, one set per thread.
 struct Checks {
-    /// Shaders named in `VICTORY_PAIRS` (`vs+ps,...`, label substrings),
+    /// Shaders named in `SINOXY_PAIRS` (`vs+ps,...`, label substrings),
     /// kept to build those pipelines after the walk.
     keep: Option<Kept>,
     validator: Option<Validator>,
@@ -160,9 +160,9 @@ pub fn run(
     jobs: Option<usize>,
 ) -> Result<()> {
     let paths = crate::default_paths(paths)?;
-    // `VICTORY_HOST_MAX_WAVE=32`: translate as for a host whose waves have
+    // `SINOXY_HOST_MAX_WAVE=32`: translate as for a host whose waves have
     // at most 32 lanes (as the runtime does on such a card).
-    if let Some(n) = std::env::var("VICTORY_HOST_MAX_WAVE").ok().and_then(|v| v.parse().ok()) {
+    if let Some(n) = std::env::var("SINOXY_HOST_MAX_WAVE").ok().and_then(|v| v.parse().ok()) {
         victory_shader::emit::set_host_max_wave(n);
     }
     let dll = validate.then(Validator::default_path).flatten();
@@ -177,7 +177,7 @@ pub fn run(
     if pipelines {
         Host::new(false).map_err(anyhow::Error::msg)?;
     }
-    let pairs: Vec<(String, String)> = std::env::var("VICTORY_PAIRS")
+    let pairs: Vec<(String, String)> = std::env::var("SINOXY_PAIRS")
         .unwrap_or_default()
         .split(',')
         .filter_map(|p| p.split_once('+'))
@@ -320,11 +320,11 @@ fn translate(
     // The hash a run's log names the shader by (`hash=` in "first bind",
     // "shader does not translate", "host pipeline refused").
     let hash = blake3::hash(&bytes).to_hex()[..16].to_owned();
-    // Diagnostics: `VICTORY_TRANSLATE_ONLY=<hash prefix>,...` translates
+    // Diagnostics: `SINOXY_TRANSLATE_ONLY=<hash prefix>,...` translates
     // those containers alone.
     static ONLY: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
     let only = ONLY.get_or_init(|| {
-        std::env::var("VICTORY_TRANSLATE_ONLY")
+        std::env::var("SINOXY_TRANSLATE_ONLY")
             .unwrap_or_default()
             .split(',')
             .map(|h| h.trim().to_lowercase())
@@ -347,9 +347,9 @@ fn translate(
     let code = blake3::hash(dxil);
     let code8 = code.to_hex()[..8].to_owned();
     let example = || format!("{} ~{code8}", example());
-    // `VICTORY_DUMP_MATCH=<dir>;<text>|<text>...`: the containers whose
+    // `SINOXY_DUMP_MATCH=<dir>;<text>|<text>...`: the containers whose
     // line holds one of the texts (a name, `#hash`), as the title has them.
-    if let Ok(spec) = std::env::var("VICTORY_DUMP_MATCH")
+    if let Ok(spec) = std::env::var("SINOXY_DUMP_MATCH")
         && let Some((dir, texts)) = spec.split_once(';')
     {
         let line = example();
@@ -376,9 +376,9 @@ fn translate(
         Ok(p) => p,
         Err(e) => return t.fail(e.to_string(), example),
     };
-    // `VICTORY_FAIL_DUMP=<dir>`: the first 3 containers of each failure reason, as the title
+    // `SINOXY_FAIL_DUMP=<dir>`: the first 3 containers of each failure reason, as the title
     // has them (`.cdxil`), to work on a translator gap offline
-    let dump = std::env::var_os("VICTORY_FAIL_DUMP");
+    let dump = std::env::var_os("SINOXY_FAIL_DUMP");
     let before: Option<BTreeMap<String, usize>> = dump.as_ref().map(|_| t.failed.iter().map(|(k, v)| (k.clone(), v.0)).collect());
     translate_programs(&container, programs, &example, t, checks);
     if let (Some(dir), Some(before)) = (dump, before) {
@@ -482,7 +482,7 @@ fn translate_programs(container: &Container, programs: Vec<NativeProgram>, examp
     }
 }
 
-/// `VICTORY_SHADER_CENSUS=<file>`: one line per emitted program, appended:
+/// `SINOXY_SHADER_CENSUS=<file>`: one line per emitted program, appended:
 /// its label, the console program's instructions by encoding class (a
 /// static count of the whole program, not of one thread's path), and the
 /// host module's instructions by kind (`emit::census::KINDS`).
@@ -491,7 +491,7 @@ fn census_line(label: &str, native: &NativeProgram, p: &ir::Program, shader: &em
     use victory_shader::gfx10::Fields;
     static OUT: std::sync::OnceLock<Option<Mutex<std::fs::File>>> = std::sync::OnceLock::new();
     let Some(out) = OUT.get_or_init(|| {
-        let path = std::env::var_os("VICTORY_SHADER_CENSUS")?;
+        let path = std::env::var_os("SINOXY_SHADER_CENSUS")?;
         let file = std::fs::OpenOptions::new().create(true).append(true).open(path).ok()?;
         Some(Mutex::new(file))
     }) else {
@@ -537,9 +537,9 @@ fn check(
     if let Some(keep) = &checks.keep {
         lock(keep).push((label(), shader.clone()));
     }
-    // `VICTORY_EMIT_DUMP` with `--list`: every emitted shader as a file.
+    // `SINOXY_EMIT_DUMP` with `--list`: every emitted shader as a file.
     if t.list
-        && let Ok(dir) = std::env::var("VICTORY_EMIT_DUMP")
+        && let Ok(dir) = std::env::var("SINOXY_EMIT_DUMP")
     {
         let name: String = label()
             .chars()
@@ -583,7 +583,7 @@ fn check(
                 .find(|l| l.contains("error"))
                 .unwrap_or(text.lines().next().unwrap_or(""))
                 .to_owned();
-            if let Ok(dir) = std::env::var("VICTORY_EMIT_DUMP") {
+            if let Ok(dir) = std::env::var("SINOXY_EMIT_DUMP") {
                 let n = t
                     .failed
                     .get(&format!("validator: {first}"))

@@ -1,6 +1,6 @@
-# ztrx
+# Sinoxy Gameon
 
-**ztrx** runs the Xbox Series build of the game natively on Windows PCs with
+**Sinoxy Gameon** runs the Xbox Series build of the game natively on Windows PCs with
 NVIDIA graphics cards, from game files you supply yourself.
 
 **This repository contains no game files or assets.** You need your own copy
@@ -28,7 +28,7 @@ Tested on Windows 11 with an **NVIDIA GeForce RTX 3050** (8 GB):
 ## Build
 
 ```powershell
-cargo build --release -p victory
+cargo build --release -p sinoxy
 ```
 
 ## Play
@@ -44,19 +44,19 @@ keyboard acts as one while the game window has focus.
 
 ## Faster settings (optional, off by default)
 
-`VICTORY_RELAY=2`, or `VICTORY_LATE_WAIT=3 VICTORY_WIDE_BACK=1` cut frame
+`SINOXY_RELAY=2`, or `SINOXY_LATE_WAIT=3 SINOXY_WIDE_BACK=1` cut frame
 time on the test machines. Set them in PowerShell before running the script.
 
 ## Debugging switches
 
 | Switch | Effect |
 |---|---|
-| `VICTORY_CAPTURE=<dir>` + `VICTORY_CAPTURE_FRAMES=<list>` | save those frames as PNG (diagnostics build) |
-| `VICTORY_KEYS=30:Enter,35:X` | press keys at those seconds (diagnostics build) |
-| `VICTORY_D3D12_DRED=1` | on a GPU failure, report the commands in flight |
-| `VICTORY_PIPELINE_WAIT_MS=24` | shorter per-frame wait for pipelines still being built |
+| `SINOXY_CAPTURE=<dir>` + `SINOXY_CAPTURE_FRAMES=<list>` | save those frames as PNG (diagnostics build) |
+| `SINOXY_KEYS=30:Enter,35:X` | press keys at those seconds (diagnostics build) |
+| `SINOXY_D3D12_DRED=1` | on a GPU failure, report the commands in flight |
+| `SINOXY_PIPELINE_WAIT_MS=24` | shorter per-frame wait for pipelines still being built |
 
-Diagnostics build: `cargo build --profile diag -p victory --features diagnostics`
+Diagnostics build: `cargo build --profile diag -p sinoxy --features diagnostics`
 
 ## License
 

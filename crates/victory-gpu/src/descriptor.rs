@@ -340,7 +340,7 @@ impl View {
 /// are sampler states), and the shapes of placed views (their descriptions
 /// without the address: as many as the title has kinds of textures and
 /// buffers, however often it moves them).
-/// `VICTORY_VIEW_INLINE=0`: every view is an entry, as before.
+/// `SINOXY_VIEW_INLINE=0`: every view is an entry, as before.
 struct Views {
     /// Each entry's view and generation.
     list: Vec<(View, u32)>,
@@ -387,11 +387,11 @@ const SHAPES: usize = 1 << (62 - PLACED_ADDRESS_BITS);
 type Shape = (bool, [u32; 14], [u32; 14]);
 
 /// Whether constant buffer views and views of placed memory are named whole
-/// in their records ([`Views`]). On by default; `VICTORY_VIEW_INLINE=0`
+/// in their records ([`Views`]). On by default; `SINOXY_VIEW_INLINE=0`
 /// makes every view a table entry, as before.
 fn inline() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_VIEW_INLINE").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_VIEW_INLINE").is_none_or(|v| v != "0"))
 }
 
 /// Views named whole in their records since the start: constant buffer
@@ -540,7 +540,7 @@ fn words_for(view: View) -> [u32; 2] {
 /// estimate: an entry of the table, and one of the index with its share of
 /// a tree node; the shapes likewise); then the entries that are constant
 /// buffer views and views of placed memory (those that did not fit a
-/// record, or all of them with `VICTORY_VIEW_INLINE=0`), the shapes of
+/// record, or all of them with `SINOXY_VIEW_INLINE=0`), the shapes of
 /// placed views kept, and the views named whole in their records since the
 /// start: constant buffer views, views of placed memory.
 #[cfg(all(windows, feature = "diagnostics"))]

@@ -138,10 +138,10 @@ fn diagnostics(image: &victory_loader::LoadedImage, cfg: &victory_core::Config) 
     victory_loader::dump_stacks_on_schedule();
     victory_hle::modules::audio::capture::start();
     watch(image.base(), image.info().size_of_image as usize);
-    // Debugging aid: `VICTORY_CRASH_SAVE=<rva>:<len>,...` (hex) writes those
+    // Debugging aid: `SINOXY_CRASH_SAVE=<rva>:<len>,...` (hex) writes those
     // title ranges to `crash-<rva>.bin` in the cache dir on a crash.
     let size = image.info().size_of_image as usize;
-    let ranges = std::env::var("VICTORY_CRASH_SAVE").unwrap_or_default();
+    let ranges = std::env::var("SINOXY_CRASH_SAVE").unwrap_or_default();
     let hex = |s: &str| usize::from_str_radix(s.trim().trim_start_matches("0x"), 16).ok();
     victory_loader::save_on_crash(
         ranges
@@ -157,11 +157,11 @@ fn diagnostics(image: &victory_loader::LoadedImage, cfg: &victory_core::Config) 
     );
 }
 
-/// Debugging aid: `VICTORY_WATCH=<rva>,...` (hex) logs the u32 at each
+/// Debugging aid: `SINOXY_WATCH=<rva>,...` (hex) logs the u32 at each
 /// title+rva whenever it changes, polled every 5 ms (an engine's state, say).
 #[cfg(all(windows, feature = "diagnostics"))]
 fn watch(base: usize, size: usize) {
-    let Ok(list) = std::env::var("VICTORY_WATCH") else {
+    let Ok(list) = std::env::var("SINOXY_WATCH") else {
         return;
     };
     let rvas: Vec<usize> = list
@@ -176,7 +176,7 @@ fn watch(base: usize, size: usize) {
                 // SAFETY: four bytes inside the mapped image, checked above.
                 let value = unsafe { ((base + rva) as *const u32).read_volatile() };
                 if *seen != Some(value) {
-                    eprintln!("VIctory: title+{rva:#x} = {value:#x}");
+                    eprintln!("Sinoxy: title+{rva:#x} = {value:#x}");
                     *seen = Some(value);
                 }
             }

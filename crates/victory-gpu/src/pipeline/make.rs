@@ -98,7 +98,7 @@ static DONE: (Mutex<()>, Condvar) = (Mutex::new(()), Condvar::new());
 fn wait_budget() -> Duration {
     static BUDGET: OnceLock<Duration> = OnceLock::new();
     *BUDGET.get_or_init(|| {
-        let millis = std::env::var("VICTORY_PIPELINE_WAIT_MS")
+        let millis = std::env::var("SINOXY_PIPELINE_WAIT_MS")
             .ok()
             .and_then(|value| value.trim().parse::<u64>().ok())
             .unwrap_or(500);
@@ -153,10 +153,10 @@ pub(crate) fn early(p: &Arc<Pending>) {
 /// frame with nothing counted yet and waited the whole half second, 2.5 s
 /// of waiting in every frame in which pipelines were being made (runs
 /// 34-49: "2504 ms waiting for pipelines" in each such frame).
-/// On by default; `VICTORY_PIPELINE_WAIT_SHARED=0` counts as before.
+/// On by default; `SINOXY_PIPELINE_WAIT_SHARED=0` counts as before.
 fn shared_budget() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_PIPELINE_WAIT_SHARED").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_PIPELINE_WAIT_SHARED").is_none_or(|v| v != "0"))
 }
 
 /// Waits for `p` while frame `frame` has budget left.

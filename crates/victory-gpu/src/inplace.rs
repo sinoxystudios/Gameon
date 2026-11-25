@@ -3,7 +3,7 @@
 //! and write the title's bytes themselves and no host copy stands between
 //! (the console's one memory). This file holds the two openings Direct3D
 //! has, a probe that says what this PC's driver makes of them
-//! (`VICTORY_INPLACE_PROBE`), and a census of which title memory could be
+//! (`SINOXY_INPLACE_PROBE`), and a census of which title memory could be
 //! opened.
 //!
 //! What the Direct3D runtime and the kernel answer, measured on this PC
@@ -54,16 +54,16 @@ const K64: usize = 64 << 10;
 /// The host's write watching (not in windows-sys' memory module).
 const MEM_WRITE_WATCH: u32 = 0x20_0000;
 
-/// `VICTORY_INPLACE_PROBE`: 0 (unset) nothing; 1 the probe on memory of
+/// `SINOXY_INPLACE_PROBE`: 0 (unset) nothing; 1 the probe on memory of
 /// its own at the first sweep, and the census 30 and 150 seconds later;
 /// 2 also opens one part of the title's own memory for a moment at the
 /// first census.
 pub(crate) fn probe_level() -> u8 {
     static LEVEL: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *LEVEL.get_or_init(|| std::env::var("VICTORY_INPLACE_PROBE").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(0))
+    *LEVEL.get_or_init(|| std::env::var("SINOXY_INPLACE_PROBE").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(0))
 }
 
-/// `VICTORY_INPLACE`: 0 (unset) off. 1: a window of title memory outside
+/// `SINOXY_INPLACE`: 0 (unset) off. 1: a window of title memory outside
 /// buffers that lies in private memory committed whole is not copied: a
 /// part of the title's allocation is opened as a host heap and the window
 /// is a buffer placed over it ([`place_for`]). 2: title buffers too,
@@ -76,7 +76,7 @@ pub(crate) fn probe_level() -> u8 {
 ///
 /// What it assumes, for 2: nothing reads title memory that a submission
 /// not yet run writes through such a buffer. With every submission waited
-/// for (the default) that holds; with `VICTORY_LATE_WAIT` it does not,
+/// for (the default) that holds; with `SINOXY_LATE_WAIT` it does not,
 /// since the flights' rules know shader writes only by the ranges copies
 /// declare. Do not combine 2 with late wait.
 ///
@@ -87,15 +87,15 @@ pub(crate) fn probe_level() -> u8 {
 /// call before such a call once it takes them over.
 pub(crate) fn level() -> u8 {
     static LEVEL: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *LEVEL.get_or_init(|| std::env::var("VICTORY_INPLACE").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(0))
+    *LEVEL.get_or_init(|| std::env::var("SINOXY_INPLACE").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(0))
 }
 
 /// The most title memory in place at once, in bytes
-/// (`VICTORY_INPLACE_MB`, 4096): opening locks the pages into the PC's
+/// (`SINOXY_INPLACE_MB`, 4096): opening locks the pages into the PC's
 /// memory, also those the title never touched.
 fn most() -> u64 {
     static MOST: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
-    *MOST.get_or_init(|| std::env::var("VICTORY_INPLACE_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(4096) << 20)
+    *MOST.get_or_init(|| std::env::var("SINOXY_INPLACE_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(4096) << 20)
 }
 
 /// In place now: windows and their bytes, title buffers and their bytes;
@@ -200,7 +200,7 @@ fn say() {
     let s: Vec<u64> = STATS.iter().map(|s| s.load(Ordering::Relaxed)).collect();
     tracing::info!(
         "title memory in place: {} windows {} MB, {} title buffers {} MB (no copy, no refresh, no copy-back); turned down: {} view memory or not private memory committed whole, \
-         {} refused by the host, {} over VICTORY_INPLACE_MB; {} let go because their memory changed",
+         {} refused by the host, {} over SINOXY_INPLACE_MB; {} let go because their memory changed",
         s[0],
         s[1] >> 20,
         s[2],
@@ -983,7 +983,7 @@ pub(crate) fn tick() {
             let Some(host) = crate::host::host() else {
                 return;
             };
-            let mb = std::env::var("VICTORY_INPLACE_PROBE_MB").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(64usize);
+            let mb = std::env::var("SINOXY_INPLACE_PROBE_MB").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(64usize);
             let took = std::time::Instant::now();
             let probe = probe(&host.device, &|| host.video_memory(), mb.min(1024));
             for line in &probe.lines {
@@ -1096,7 +1096,7 @@ mod tests {
 
     /// The probe, whole, on the software adapter: the same calls the card
     /// gets. The runtime's and the kernel's rules hold there; the card's
-    /// driver is what a run with `VICTORY_INPLACE_PROBE=1` adds.
+    /// driver is what a run with `SINOXY_INPLACE_PROBE=1` adds.
     #[test]
     fn warp_probe_opens_title_like_memory_and_the_gpu_sees_its_bytes() {
         let Some(device) = warp() else { return };

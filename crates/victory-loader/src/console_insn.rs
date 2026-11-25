@@ -21,11 +21,11 @@ const CONTINUE_EXECUTION: i32 = -1;
 /// took 2-9 ms in the title's heaps of 0.6-2.2 GB and 89 ms in its 6.2 GB page pool (run 30),
 /// and the title zeroes blocks of them with `clzero` loops all through a frame: six of its
 /// threads spent 25-78 % of their time inside that query (runs 29 and 30), about 27 s of
-/// processor time in Windows per 9 s frame. On by default; `VICTORY_CLZERO_ASK=1` asks every
+/// processor time in Windows per 9 s frame. On by default; `SINOXY_CLZERO_ASK=1` asks every
 /// time, as before.
 fn remembers() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_CLZERO_ASK").is_none_or(|v| v != "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_CLZERO_ASK").is_none_or(|v| v != "1"))
 }
 
 /// Answers a remembered region gives before Windows is asked about it again: one freed or

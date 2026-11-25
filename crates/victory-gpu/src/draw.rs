@@ -74,11 +74,11 @@ thread_local! {
 /// The title binds buffers its shaders only read through such views, and
 /// every range declared costs a snapshot and a compare of its bytes: 3.97
 /// GB a frame in 31 submissions, 0.49 s of snapshots and 0.28 s of
-/// comparing (run 28). On by default; `VICTORY_WRITE_SKIP=0` declares
+/// comparing (run 28). On by default; `SINOXY_WRITE_SKIP=0` declares
 /// every such range, as before.
 fn write_skip() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WRITE_SKIP").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WRITE_SKIP").is_none_or(|v| v != "0"))
 }
 
 /// A run of indirect records clamped in one pass ([`windows`]): the host
@@ -102,7 +102,7 @@ struct Window {
 const WINDOW_MOST: u64 = 64;
 
 /// Whether indirect draws that read record after record of one argument
-/// buffer are clamped a window at a time (`VICTORY_INDIRECT_WINDOW=1`; off
+/// buffer are clamped a window at a time (`SINOXY_INDIRECT_WINDOW=1`; off
 /// by default).
 ///
 /// The title issues its mesh draws one record per call, each from the next
@@ -143,7 +143,7 @@ const WINDOW_MOST: u64 = 64;
 /// before, at the next submission.
 fn windows() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_INDIRECT_WINDOW").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_INDIRECT_WINDOW").is_some_and(|v| v == "1"))
 }
 
 /// What one title list has set, and what its host list was last given.
@@ -234,7 +234,7 @@ impl State {
     }
 }
 
-/// An experiment on the title's scissor rectangles (`VICTORY_SCISSOR_TEST=full`):
+/// An experiment on the title's scissor rectangles (`SINOXY_SCISSOR_TEST=full`):
 /// they are all widened to the whole target. The title's room at
 /// the start of the prologue lost its walls in five runs of seven, and in
 /// those runs the player's body and the world outside were cut by one
@@ -244,30 +244,30 @@ impl State {
 /// its picture.
 fn scissor_test() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var("VICTORY_SCISSOR_TEST").as_deref() == Ok("full"))
+    *ON.get_or_init(|| std::env::var("SINOXY_SCISSOR_TEST").as_deref() == Ok("full"))
 }
 
-/// An experiment on mesh draws (`VICTORY_MESH_TEST`): 1 for `skip` (none
+/// An experiment on mesh draws (`SINOXY_MESH_TEST`): 1 for `skip` (none
 /// is issued), 2 for `scissor` (each runs its shaders but rasterises one
 /// pixel), 0 otherwise. It tells a card hung by a mesh shader from one hung
 /// by what the shader's triangles cover.
 fn mesh_test() -> u8 {
     static ON: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| match std::env::var("VICTORY_MESH_TEST").as_deref() {
+    *ON.get_or_init(|| match std::env::var("SINOXY_MESH_TEST").as_deref() {
         Ok("skip") => 1,
         Ok("scissor") => 2,
         _ => 0,
     })
 }
 
-/// `VICTORY_MESH_TEST=keep:<hex digits>[:<hex digits>]`: only the mesh
+/// `SINOXY_MESH_TEST=keep:<hex digits>[:<hex digits>]`: only the mesh
 /// draws whose mesh shader's hash ends in one of the first digits (and
 /// whose digit before it is one of the second, if given) are issued: a
 /// search for the shaders that stop the card.
 fn mesh_kept(pipeline: usize) -> bool {
     static KEEP: std::sync::OnceLock<Option<(String, String)>> = std::sync::OnceLock::new();
     let Some((last, before)) = KEEP.get_or_init(|| {
-        let value = std::env::var("VICTORY_MESH_TEST").ok()?;
+        let value = std::env::var("SINOXY_MESH_TEST").ok()?;
         let mut parts = value.strip_prefix("keep:")?.split(':');
         Some((parts.next()?.to_owned(), parts.next().unwrap_or("").to_owned()))
     }) else {
@@ -316,7 +316,7 @@ type RootSlot = (u32, Option<std::sync::Arc<crate::shadow::Shadow>>);
 /// Buffer views of the heap whose slot showed another host buffer than
 /// the copy the pass brought up to date for them, since the start
 /// (diagnostics; for the memory line). It stays 0 while the pass and the
-/// slots agree; with `VICTORY_VIEW_EXTENT=0` it counts the views that were
+/// slots agree; with `SINOXY_VIEW_EXTENT=0` it counts the views that were
 /// read stale.
 #[cfg(feature = "diagnostics")]
 pub(crate) static HEAP_VIEWS_ELSEWHERE: AtomicU64 = AtomicU64::new(0);
@@ -374,11 +374,11 @@ pub(crate) fn dispatched() -> u64 {
 /// buffer. (They were taken as 1 MiB: 1,452 of the 2,021 mesh vertex
 /// streams of a cutscene frame reach further, and what lay past the first
 /// megabyte was never brought up to date - meshes without bodies, exploded
-/// triangles. `VICTORY_ROOT_VIEW_MB` sets a limit again.)
+/// triangles. `SINOXY_ROOT_VIEW_MB` sets a limit again.)
 fn root_view(list: &HostList, address: u64, srv: bool) -> Option<u64> {
     static LIMIT: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
     let limit = *LIMIT.get_or_init(|| {
-        std::env::var("VICTORY_ROOT_VIEW_MB")
+        std::env::var("SINOXY_ROOT_VIEW_MB")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
             .map_or(u64::MAX, |mb| mb << 20)
@@ -1061,13 +1061,13 @@ impl State {
     /// host copy from `address` on, as a one-view table (a null view
     /// without an address, without a host copy shaders can write, or at an
     /// address not on 16 bytes), or as a root descriptor with
-    /// `VICTORY_ROOT_SRV_DIRECT=1` (the dispatch is dropped then if there
+    /// `SINOXY_ROOT_SRV_DIRECT=1` (the dispatch is dropped then if there
     /// is nothing to bind). With `writes`, what the shader stored is copied
     /// back into title memory when the list has run. False if the draw
     /// must be dropped.
     /// shortcut: a root view has no size: the view, the refresh and the
     /// copy back cover all that is left of the title's buffer
-    /// (`VICTORY_ROOT_UAV_MB` sets a limit for all three).
+    /// (`SINOXY_ROOT_UAV_MB` sets a limit for all three).
     fn root_uav(
         &mut self,
         list: &HostList,
@@ -1079,7 +1079,7 @@ impl State {
         const UNORDERED: i32 = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS.0;
         static LIMIT: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
         let limit = *LIMIT.get_or_init(|| {
-            std::env::var("VICTORY_ROOT_UAV_MB")
+            std::env::var("SINOXY_ROOT_UAV_MB")
                 .ok()
                 .and_then(|v| v.parse::<u64>().ok())
                 .map_or(u64::MAX, |mb| mb << 20)
@@ -1383,10 +1383,10 @@ impl State {
                 // By the copy's number: a copy made where one let go was
                 // (`shadow::let_go_idle`) has never been refreshed.
                 let key = shadow.id() as usize;
-                // `VICTORY_UNWATCHED_FRAMES` sets the interval (1: every frame).
+                // `SINOXY_UNWATCHED_FRAMES` sets the interval (1: every frame).
                 static EVERY: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
                 let every = *EVERY.get_or_init(|| {
-                    std::env::var("VICTORY_UNWATCHED_FRAMES")
+                    std::env::var("SINOXY_UNWATCHED_FRAMES")
                         .ok()
                         .and_then(|v| v.parse().ok())
                         .unwrap_or(1)
@@ -1434,7 +1434,7 @@ impl State {
     /// a second): uploaded again when more of it is mapped. Pages mapped
     /// in place of others, and contents changed with no descriptor write,
     /// are missed (hook the page-mapping events for those).
-    /// `VICTORY_HEAP_TEXTURES=0` turns it off.
+    /// `SINOXY_HEAP_TEXTURES=0` turns it off.
     fn heap_textures(
         &self,
         list: &HostList,
@@ -1442,7 +1442,7 @@ impl State {
         host: &crate::descriptor::host::HostHeap,
     ) {
         static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if !*ON.get_or_init(|| std::env::var_os("VICTORY_HEAP_TEXTURES").is_none_or(|v| v != "0")) {
+        if !*ON.get_or_init(|| std::env::var_os("SINOXY_HEAP_TEXTURES").is_none_or(|v| v != "0")) {
             return;
         }
         /// Bytes of texture memory staged per frame.
@@ -1782,7 +1782,7 @@ impl State {
         text
     }
 
-    /// A mesh draw under `VICTORY_MESH_TEST=scissor` rasterises one pixel:
+    /// A mesh draw under `SINOXY_MESH_TEST=scissor` rasterises one pixel:
     /// the scissors before it (`on`), the title's after it.
     fn mesh_scissor(&self, list: &HostList, on: bool) {
         if mesh_test() != 2 {
@@ -2344,7 +2344,7 @@ impl State {
             return false;
         };
         if kind == MESH && (mesh_test() == 1 || !mesh_kept(self.pipeline)) {
-            why("mesh draws are switched off (VICTORY_MESH_TEST=skip)");
+            why("mesh draws are switched off (SINOXY_MESH_TEST=skip)");
             return false;
         }
         // A window of records clamped in one pass (`windows`): for single

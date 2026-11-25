@@ -65,7 +65,7 @@ extern "system" fn unimplemented_import(site: &'static ImportSite) -> u64 {
             // Into the crash log too: `abort` ends the process without
             // running the handlers that write it.
             let (dll, symbol) = (&site.dll, &site.symbol);
-            let text = format!("VIctory: unimplemented import {dll}!{symbol} called");
+            let text = format!("Sinoxy: unimplemented import {dll}!{symbol} called");
             crate::log_crash(&text);
             // SAFETY: plain Win32 calls without preconditions.
             unsafe {
@@ -154,10 +154,10 @@ mod tests {
     use super::*;
 
     /// In a child process of the next test: calls an unimplemented import
-    /// that traps, with the crash log where `VICTORY_TRAP_LOG` says.
+    /// that traps, with the crash log where `SINOXY_TRAP_LOG` says.
     #[test]
     fn trap_child() {
-        let Some(log) = std::env::var_os("VICTORY_TRAP_LOG") else {
+        let Some(log) = std::env::var_os("SINOXY_TRAP_LOG") else {
             return;
         };
         crate::log_crashes_to(log.into());
@@ -176,12 +176,12 @@ mod tests {
         let log = dir.path().join("crashes.log");
         let out = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "thunks::tests::trap_child", "--nocapture"])
-            .env("VICTORY_TRAP_LOG", &log)
+            .env("SINOXY_TRAP_LOG", &log)
             .output()
             .unwrap();
         assert!(!out.status.success(), "the trap ends the process");
         let text = std::fs::read_to_string(&log).unwrap_or_default();
-        let named = text.contains("VIctory: unimplemented import probe.dll!Missing called");
+        let named = text.contains("Sinoxy: unimplemented import probe.dll!Missing called");
         assert!(named, "crash log: {text:?}");
     }
 }

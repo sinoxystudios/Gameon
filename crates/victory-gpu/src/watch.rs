@@ -142,7 +142,7 @@ pub(crate) fn ask_ahead_done() {
 }
 
 /// Whether a submission asks the kernel once, before its first refresh,
-/// about every range its lists refresh (`VICTORY_ASK_ONCE=1`; off by
+/// about every range its lists refresh (`SINOXY_ASK_ONCE=1`; off by
 /// default).
 ///
 /// A submission's refreshes are done in groups, between the title's own
@@ -161,8 +161,8 @@ pub(crate) fn once() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     // On by default since run 81 (with card buffers: 375-450 ms a frame
     // against 573-647, the picture unchanged over four minutes);
-    // `VICTORY_ASK_ONCE=0` asks per range, as before.
-    *ON.get_or_init(|| std::env::var_os("VICTORY_ASK_ONCE").is_none_or(|v| v != "0"))
+    // `SINOXY_ASK_ONCE=0` asks per range, as before.
+    *ON.get_or_init(|| std::env::var_os("SINOXY_ASK_ONCE").is_none_or(|v| v != "0"))
 }
 
 /// With [`once`]: asks about `ranges` (everything a submission's lists
@@ -401,9 +401,9 @@ fn guard(start: usize, end: usize) -> Option<Vec<usize>> {
     // first one's state, and a guarded view is one long run of read-only
     // pages: 0.6 ms for the title's 174 MB heap, 16 times a frame, and most
     // of the 68 ms a frame of "guards" (run 58).
-    // `VICTORY_GUARD_ASK=1` asks every time, as before.
+    // `SINOXY_GUARD_ASK=1` asks every time, as before.
     static ASK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    let known = !*ASK.get_or_init(|| std::env::var_os("VICTORY_GUARD_ASK").is_some_and(|v| v == "1")) && {
+    let known = !*ASK.get_or_init(|| std::env::var_os("SINOXY_GUARD_ASK").is_some_and(|v| v == "1")) && {
         let g = guards();
         let first = start / BLOCK;
         g.protected.contains(&first) || g.absent.contains(&first)
@@ -473,13 +473,13 @@ fn guard(start: usize, end: usize) -> Option<Vec<usize>> {
 /// its copy was marked not watched for good and copied whole at every
 /// refresh, around its unmapped pages (run 54: 300 such ranges, 570 MB
 /// copied a frame for them, 255 copies a frame reading around holes).
-/// `VICTORY_GUARD_HOLES=0` looks at the first address only, as before.
+/// `SINOXY_GUARD_HOLES=0` looks at the first address only, as before.
 fn is_view(start: usize, end: usize) -> bool {
     use windows_sys::Win32::System::Memory::{
         MEM_COMMIT, MEM_MAPPED, MEMORY_BASIC_INFORMATION, VirtualQuery,
     };
     static HOLES: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    let holes = *HOLES.get_or_init(|| std::env::var_os("VICTORY_GUARD_HOLES").is_none_or(|v| v != "0"));
+    let holes = *HOLES.get_or_init(|| std::env::var_os("SINOXY_GUARD_HOLES").is_none_or(|v| v != "0"));
     let mut at = start;
     loop {
         // SAFETY: plain data filled in by the query.

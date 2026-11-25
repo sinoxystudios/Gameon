@@ -817,7 +817,7 @@ pub(super) fn wave_local(p: &Program, st: &Structured) -> Result<(), (usize, &'s
 
 /// The mode of a group barrier the translation adds (host waves meeting):
 /// a wait for the group with a shared-memory fence; the fence alone with
-/// `VICTORY_GROUP_SYNC=0` ([`super::group_sync`]).
+/// `SINOXY_GROUP_SYNC=0` ([`super::group_sync`]).
 fn meeting_mode() -> u32 {
     if super::group_sync() == 0 { 8 } else { 1 | 8 }
 }
@@ -988,7 +988,7 @@ pub(super) fn with_local_waves<R>(f: impl FnOnce() -> R) -> R {
     r
 }
 
-/// `VICTORY_F16_NEAREST=1`: the results of 16-bit float operations (`v_add_f16`,
+/// `SINOXY_F16_NEAREST=1`: the results of 16-bit float operations (`v_add_f16`,
 /// `v_mul_f16`, `v_cvt_f16_f32` ...) are rounded to nearest as the console rounds them
 /// ([`Lower::f16_nearest`]) instead of as the host's `f32tof16` does (toward zero on NVIDIA:
 /// the last place of a result that is not exact is then one lower than the console's).
@@ -1000,7 +1000,7 @@ fn f16_nearest_on() -> bool {
         return on;
     }
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_F16_NEAREST").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_F16_NEAREST").is_some_and(|v| v == "1"))
 }
 
 #[cfg(test)]
@@ -1009,11 +1009,11 @@ thread_local! {
     pub(super) static TEST_F16_NEAREST: std::cell::Cell<Option<bool>> = const { std::cell::Cell::new(None) };
 }
 
-/// `VICTORY_WAVE_OWN_BITS=0`: a wave OR where not every lane runs is refused as before
+/// `SINOXY_WAVE_OWN_BITS=0`: a wave OR where not every lane runs is refused as before
 /// ([`super::own_bits`]).
 fn own_bits_on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WAVE_OWN_BITS").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WAVE_OWN_BITS").is_none_or(|v| v != "0"))
 }
 
 pub(super) fn host_max_wave() -> u32 {
@@ -1335,8 +1335,8 @@ impl<'a> Lower<'a> {
                         }
                     }
                 }
-                // `VICTORY_WAVE_WHY=1`: why a program keeps 64-lane waves (one line per reason)
-                if wave == 64 && std::env::var_os("VICTORY_WAVE_WHY").is_some() {
+                // `SINOXY_WAVE_WHY=1`: why a program keeps 64-lane waves (one line per reason)
+                if wave == 64 && std::env::var_os("SINOXY_WAVE_WHY").is_some() {
                     let mut why: Vec<&str> = Vec::new();
                     for i in insts() {
                         let n = i.name();
@@ -1512,7 +1512,7 @@ impl<'a> Lower<'a> {
             },
             own_bits: match &exchange {
                 Some((_, false, _)) if !LOCAL_WAVES.get() && own_bits_on() => {
-                    super::own_bits::find(p, x.st, std::env::var_os("VICTORY_WAVE_WHY").is_some())
+                    super::own_bits::find(p, x.st, std::env::var_os("SINOXY_WAVE_WHY").is_some())
                 }
                 _ => Default::default(),
             },
@@ -4017,8 +4017,8 @@ impl<'a> Lower<'a> {
             // shortcut: outputs past the cap even at the lane count are
             // still emitted with the lower maxima (drivers take them);
             // refuse them here if one hangs.
-            // Experiment (`VICTORY_MESH_OUTPUT_STRICT=1`): they are refused.
-            if !fits(mesh) && std::env::var_os("VICTORY_MESH_OUTPUT_STRICT").is_some() {
+            // Experiment (`SINOXY_MESH_OUTPUT_STRICT=1`): they are refused.
+            if !fits(mesh) && std::env::var_os("SINOXY_MESH_OUTPUT_STRICT").is_some() {
                 return Err("a mesh shader whose outputs pass the host's 32 KiB");
             }
             self.s.mesh = Some(mesh);
@@ -7571,7 +7571,7 @@ impl<'a> Lower<'a> {
             }
             // The console rounds to nearest; the host's conversion may round toward zero
             // (NVIDIA's does), one step of the last place lower where the two differ.
-            // shortcut: the host's conversion unless `VICTORY_F16_NEAREST=1`
+            // shortcut: the host's conversion unless `SINOXY_F16_NEAREST=1`
             // ([`f16_nearest_on`]), which costs a dozen instructions per result.
             let h = if f16_nearest_on() {
                 l.f16_nearest(f)
@@ -10615,13 +10615,13 @@ impl<'a> Lower<'a> {
         // unmarked, a value without a DXIL form coming into it became zero without a
         // word (the looked-up tint of the material resolve programs, whose size
         // computation had no value, was zero in every lane that way).
-        // shortcut: only with `VICTORY_STRICT_JOINS` set (the offline pack
+        // shortcut: only with `SINOXY_STRICT_JOINS` set (the offline pack
         // listing sets it to count them): 40 programs that translate today
         // stop by name with it (vehicle paint pixel shaders at "the first
         // half of an interpolation", foliage mesh shaders); until those are
         // lowered they keep drawing with that zero.
         static STRICT: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        let strict = *STRICT.get_or_init(|| std::env::var_os("VICTORY_STRICT_JOINS").is_some());
+        let strict = *STRICT.get_or_init(|| std::env::var_os("SINOXY_STRICT_JOINS").is_some());
         let mut work: Vec<Value> = if strict {
             self.read_phis.iter().copied().collect()
         } else {
@@ -11233,7 +11233,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "ours marks joins read through joins only with VICTORY_STRICT_JOINS (40 programs stop otherwise)"]
+    #[ignore = "ours marks joins read through joins only with SINOXY_STRICT_JOINS (40 programs stop otherwise)"]
     fn a_missing_value_stays_missing_through_two_live_joins() {
         let mut words = [
             0xF490_0180,

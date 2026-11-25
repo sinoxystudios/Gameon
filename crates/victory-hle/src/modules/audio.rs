@@ -627,13 +627,13 @@ fn decode(context: Context, voice: &mut Voice) -> bool {
     true
 }
 
-/// `VICTORY_XMA_DUMP=<dir>`: saves the context words (`<n>-<index>.ctx`)
+/// `SINOXY_XMA_DUMP=<dir>`: saves the context words (`<n>-<index>.ctx`)
 /// and input buffer 0 (`.xma`) of the first 32 voices enabled, to test
 /// the decoder on a title's streams outside the title.
 #[cfg(feature = "diagnostics")]
 fn dump_input(index: u32, context: Context) {
     static COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
-    let Some(dir) = std::env::var_os("VICTORY_XMA_DUMP") else {
+    let Some(dir) = std::env::var_os("SINOXY_XMA_DUMP") else {
         return;
     };
     let n = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

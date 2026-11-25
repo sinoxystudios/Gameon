@@ -201,7 +201,7 @@ fn a_sum_of_halves_over_the_wave_is_the_consoles_tree_bit_for_bit() {
 
 /// One `v_add_f16` whose exact result lies between two halves: 1 + 3/1024 (0x3C03) plus 2
 /// (0x4000) is 3 + 1.5 steps of that range, which the console rounds up to 0x4202. The
-/// host's `f32tof16` may give 0x4201 (toward zero); with `VICTORY_F16_NEAREST=1` the
+/// host's `f32tof16` may give 0x4201 (toward zero); with `SINOXY_F16_NEAREST=1` the
 /// translation gives the console's whatever the host does.
 #[test]
 fn a_16_bit_sum_rounds_to_nearest_when_asked_to() {

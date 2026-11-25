@@ -1,8 +1,8 @@
 //! Where the user's files live.
 //!
 //! Resolution order for each value: environment variable, then the config
-//! file (`VICTORY_CONFIG`, else `./victory.toml`), then the default.
-//! See `victory.example.toml` at the repository root.
+//! file (`SINOXY_CONFIG`, else `./sinoxy.toml`), then the default.
+//! See `sinoxy.example.toml` at the repository root.
 
 use std::path::{Path, PathBuf};
 
@@ -46,17 +46,17 @@ struct FilePaths {
 impl Config {
     /// Loads configuration from the environment and the config file.
     pub fn load() -> Result<Self> {
-        let explicit = std::env::var_os("VICTORY_CONFIG").map(PathBuf::from);
+        let explicit = std::env::var_os("SINOXY_CONFIG").map(PathBuf::from);
         let path = explicit
             .clone()
-            .unwrap_or_else(|| PathBuf::from("victory.toml"));
+            .unwrap_or_else(|| PathBuf::from("sinoxy.toml"));
         let file = if path.is_file() {
             let text = std::fs::read_to_string(&path)
                 .with_context(|| format!("reading {}", path.display()))?;
             Some((path, text))
         } else if let Some(p) = explicit {
             anyhow::bail!(
-                "VICTORY_CONFIG points at {}, which does not exist",
+                "SINOXY_CONFIG points at {}, which does not exist",
                 p.display()
             );
         } else {
@@ -79,20 +79,20 @@ impl Config {
         env: impl Fn(&str) -> Option<std::ffi::OsString>,
     ) -> Result<Self> {
         let env_path = |k: &str| env(k).filter(|v| !v.is_empty()).map(PathBuf::from);
-        let test_titles = match env("VICTORY_TEST_TITLES") {
+        let test_titles = match env("SINOXY_TEST_TITLES") {
             Some(v) if !v.is_empty() => std::env::split_paths(&v)
                 .filter(|p| !p.as_os_str().is_empty())
                 .collect(),
             _ => file.test_titles,
         };
-        let cache_dir = env_path("VICTORY_CACHE_DIR")
+        let cache_dir = env_path("SINOXY_CACHE_DIR")
             .or(file.cache_dir)
             .map_or_else(|| default_dir("cache"), Ok)?;
-        let data_dir = env_path("VICTORY_DATA_DIR")
+        let data_dir = env_path("SINOXY_DATA_DIR")
             .or(file.data_dir)
             .map_or_else(|| default_dir("data"), Ok)?;
         Ok(Config {
-            game_dir: env_path("VICTORY_GAME_DIR").or(file.game_dir),
+            game_dir: env_path("SINOXY_GAME_DIR").or(file.game_dir),
             cache_dir,
             data_dir,
             test_titles,
@@ -103,8 +103,8 @@ impl Config {
     /// The game directory, or a helpful error if it is not configured.
     pub fn require_game_dir(&self) -> Result<&Path> {
         self.game_dir.as_deref().context(
-            "no game directory configured: set VICTORY_GAME_DIR or [paths].game_dir in \
-             victory.toml (see victory.example.toml)",
+            "no game directory configured: set SINOXY_GAME_DIR or [paths].game_dir in \
+             sinoxy.toml (see sinoxy.example.toml)",
         )
     }
 
@@ -126,13 +126,13 @@ fn subdir(root: &Path, sub: &str) -> Result<PathBuf> {
     Ok(dir)
 }
 
-/// `%LOCALAPPDATA%/victory/<name>` (elsewhere the XDG or home cache).
+/// `%LOCALAPPDATA%/sinoxy/<name>` (elsewhere the XDG or home cache).
 fn default_dir(name: &str) -> Result<PathBuf> {
     let base = std::env::var_os("LOCALAPPDATA")
         .or_else(|| std::env::var_os("XDG_CACHE_HOME"))
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
-        .context("cannot determine a user directory; set VICTORY_CACHE_DIR and VICTORY_DATA_DIR")?;
+        .context("cannot determine a user directory; set SINOXY_CACHE_DIR and SINOXY_DATA_DIR")?;
     Ok(base.join("victory").join(name))
 }
 
@@ -148,7 +148,7 @@ mod tests {
             cache_dir: Some("cache-from-file".into()),
             ..Default::default()
         };
-        let env = |k: &str| (k == "VICTORY_GAME_DIR").then(|| OsString::from("from-env"));
+        let env = |k: &str| (k == "SINOXY_GAME_DIR").then(|| OsString::from("from-env"));
         let cfg = Config::resolve(file, None, env).unwrap();
         assert_eq!(cfg.game_dir.unwrap(), PathBuf::from("from-env"));
         assert_eq!(cfg.cache_dir, PathBuf::from("cache-from-file"));
@@ -160,7 +160,7 @@ mod tests {
             game_dir: Some("from-file".into()),
             ..Default::default()
         };
-        let env = |k: &str| (k == "VICTORY_GAME_DIR").then(OsString::new);
+        let env = |k: &str| (k == "SINOXY_GAME_DIR").then(OsString::new);
         let cfg = Config::resolve(file, None, env).unwrap();
         assert_eq!(cfg.game_dir.unwrap(), PathBuf::from("from-file"));
     }
@@ -171,7 +171,7 @@ mod tests {
             test_titles: vec!["from-file".into()],
             ..Default::default()
         };
-        let env = |k: &str| (k == "VICTORY_TEST_TITLES").then(OsString::new);
+        let env = |k: &str| (k == "SINOXY_TEST_TITLES").then(OsString::new);
         let cfg = Config::resolve(file, None, env).unwrap();
         assert_eq!(cfg.test_titles, vec![PathBuf::from("from-file")]);
     }
@@ -180,7 +180,7 @@ mod tests {
     fn test_titles_env_splits_paths() {
         let value = std::env::join_paths(["first", "second"]).unwrap();
         let file = FilePaths::default();
-        let env = |k: &str| (k == "VICTORY_TEST_TITLES").then(|| value.clone());
+        let env = |k: &str| (k == "SINOXY_TEST_TITLES").then(|| value.clone());
         let cfg = Config::resolve(file, None, env).unwrap();
         assert_eq!(
             cfg.test_titles,

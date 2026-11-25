@@ -280,7 +280,7 @@ pub(crate) fn alias(list: &HostList, placed: This, source: This) -> bool {
 }
 
 /// Whether a texture refresh that finds the runtime remapping title memory
-/// goes on without waiting for it (`VICTORY_TEXTURE_NO_WAIT=1`; off by
+/// goes on without waiting for it (`SINOXY_TEXTURE_NO_WAIT=1`; off by
 /// default).
 ///
 /// A texture whose memory is all mapped is read in place, under a lock
@@ -303,7 +303,7 @@ pub(crate) fn alias(list: &HostList, placed: This, source: This) -> bool {
 /// is remapping may show a frame later. It never shows partly read.
 fn no_wait() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_NO_WAIT").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_TEXTURE_NO_WAIT").is_some_and(|v| v == "1"))
 }
 
 /// Since the last frame-rate line, with [`no_wait`]: refreshes that read
@@ -355,7 +355,7 @@ fn with_read<R>(size: usize, f: impl FnOnce(&mut [u8]) -> R) -> R {
 }
 
 /// Whether a texture all of whose memory is mapped is read through the
-/// kernel's copy instead of in place (`VICTORY_TEXTURE_COPY=1`; off by
+/// kernel's copy instead of in place (`SINOXY_TEXTURE_COPY=1`; off by
 /// default). Round 3 of the memory work read every such texture that way
 /// to be safe from pages taken away under the read; it cost 0.6 ms per MB
 /// against 0.3 in place (90-105 ms a frame while the world streams in, runs
@@ -365,7 +365,7 @@ fn with_read<R>(size: usize, f: impl FnOnce(&mut [u8]) -> R) -> R {
 /// left to tell whether the copy was what lost the device.
 fn through_copy() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_COPY").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_TEXTURE_COPY").is_some_and(|v| v == "1"))
 }
 
 /// Calls `f` with the `size` bytes of title memory at `memory`, read
@@ -645,9 +645,9 @@ impl Staging {
         // write to the same pages through another view) is still found by
         // the hash, which is taken every eighth frame only, by the
         // texture's address, so the textures take turns.
-        // `VICTORY_TEXTURE_GUARD=0` hashes at every check, as before.
+        // `SINOXY_TEXTURE_GUARD=0` hashes at every check, as before.
         static GUARD: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *GUARD.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_GUARD").is_none_or(|v| v != "0"))
+        if *GUARD.get_or_init(|| std::env::var_os("SINOXY_TEXTURE_GUARD").is_none_or(|v| v != "0"))
             && let Some((now, written)) = waited(1, || crate::watch::writes(start, start + size, true))
         {
             const HASH_EVERY: u64 = 8;
@@ -843,7 +843,7 @@ pub(crate) fn committed(at: *const u8, len: usize) -> bool {
 }
 
 /// Whether the two questions above and below are put to `VirtualQuery`, as
-/// they were (`VICTORY_COMMITTED_QUERY=1`). `VirtualQuery` answers with the
+/// they were (`SINOXY_COMMITTED_QUERY=1`). `VirtualQuery` answers with the
 /// length of the run of pages in the same state, which it finds by walking
 /// the page tables to the run's end: 8.8 ms for one question in the title's
 /// 1.1 GB block (round 6). The pass over the heap's views asks three or
@@ -853,7 +853,7 @@ pub(crate) fn committed(at: *const u8, len: usize) -> bool {
 /// the walks (run 76: 8-22 askings a frame of 6-21 ms each, 46-172 ms).
 fn by_query() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_COMMITTED_QUERY").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_COMMITTED_QUERY").is_some_and(|v| v == "1"))
 }
 
 /// Of the kernel's pages that hold `[at, at + len)` (`len > 0`): how many
@@ -938,7 +938,7 @@ pub(crate) fn mapped_bytes(at: *const u8, len: usize) -> u64 {
     }
     if !by_query() {
         static BY_PAGE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *BY_PAGE.get_or_init(|| std::env::var_os("VICTORY_MAPPED_BY_PAGE").is_some_and(|v| v == "1")) {
+        if *BY_PAGE.get_or_init(|| std::env::var_os("SINOXY_MAPPED_BY_PAGE").is_some_and(|v| v == "1")) {
             // By page, without the walk: whole pages, cut to the range.
             let (there, _) = readable(start, len, false);
             return (there as u64 * 4096).min(len as u64);
@@ -950,7 +950,7 @@ pub(crate) fn mapped_bytes(at: *const u8, len: usize) -> u64 {
         // kernel). By page, a texture half there cost a failed kernel read
         // for each of its missing pages, every frame it stayed due: 1,663
         // textures "uploaded in part" kept the pass over the heap's views at
-        // 90-160 ms a frame (run 81). `VICTORY_MAPPED_BY_PAGE=1`: by page.
+        // 90-160 ms a frame (run 81). `SINOXY_MAPPED_BY_PAGE=1`: by page.
         const BLOCK: usize = 64 << 10;
         let mut there = 0u64;
         let mut block = start & !(BLOCK - 1);

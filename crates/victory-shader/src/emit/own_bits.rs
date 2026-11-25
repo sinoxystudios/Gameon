@@ -37,7 +37,7 @@
 //! Anything else is refused there as before ("a wave reduction where not every lane runs") and
 //! left to the forms of the program in which every lane runs that code (`emit`'s retries: the
 //! skips left out, the branches around it taken wave-wide), where the halves do exchange.
-//! `VICTORY_WAVE_OWN_BITS=0` turns this off.
+//! `SINOXY_WAVE_OWN_BITS=0` turns this off.
 
 use std::collections::{HashMap, HashSet};
 

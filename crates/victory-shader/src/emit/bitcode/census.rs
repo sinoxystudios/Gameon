@@ -1,7 +1,7 @@
 //! Counts of a module's instructions by kind (a diagnostic): what a
 //! translated program costs before the driver's compiler sees it.
 //!
-//! `VICTORY_SHADER_CENSUS` (any value) turns the counting on; the counts of
+//! `SINOXY_SHADER_CENSUS` (any value) turns the counting on; the counts of
 //! the module a thread wrote last are read with [`take`]. The `translate`
 //! command writes them as a table (see `apps/victory/src/translate.rs`).
 
@@ -57,10 +57,10 @@ fn fnv(bytes: &[u8]) -> u64 {
     })
 }
 
-/// Whether modules are counted (`VICTORY_SHADER_CENSUS` set).
+/// Whether modules are counted (`SINOXY_SHADER_CENSUS` set).
 pub fn enabled() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_SHADER_CENSUS").is_some())
+    *ON.get_or_init(|| std::env::var_os("SINOXY_SHADER_CENSUS").is_some())
 }
 
 /// The counts of the module whose bitcode the container `dxil` holds, if

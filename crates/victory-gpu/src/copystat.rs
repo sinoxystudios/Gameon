@@ -1,6 +1,6 @@
 //! Diagnostics: where the submission copies of title memory go (which
 //! ranges, how often, of what memory) and what limits their rate, logged
-//! with the frame-rate line. `VICTORY_COPY_MODE=plain` copies without the
+//! with the frame-rate line. `SINOXY_COPY_MODE=plain` copies without the
 //! mapped-page guard, `none` skips the copies (both for timing only).
 
 use std::collections::HashMap;
@@ -138,7 +138,7 @@ pub(crate) fn add(c: C, n: u64) {
 /// How copies run: 0 guarded (as always), 1 plain, 2 not at all.
 pub(crate) fn mode() -> u8 {
     static MODE: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *MODE.get_or_init(|| match std::env::var("VICTORY_COPY_MODE").as_deref() {
+    *MODE.get_or_init(|| match std::env::var("SINOXY_COPY_MODE").as_deref() {
         Ok("plain") => 1,
         Ok("none") => 2,
         _ => 0,
@@ -171,7 +171,7 @@ static LONGEST: Mutex<(u64, String)> = Mutex::new((0, String::new()));
 /// pipelines): how many, and their microseconds.
 static WAITS_BY_WORK: Mutex<Option<HashMap<String, (u64, u64)>>> = Mutex::new(None);
 
-/// With `VICTORY_GPU_TIMING`: the commands' time on the card since the last
+/// With `SINOXY_GPU_TIMING`: the commands' time on the card since the last
 /// line by what they ran (a pipeline, or the kind of command): how many,
 /// their microseconds, and the longest one's.
 static COMMANDS_BY_WORK: Mutex<Option<HashMap<String, (u64, u64, u64)>>> = Mutex::new(None);
@@ -226,7 +226,7 @@ pub(crate) fn card_waited(us: u64, what: impl FnOnce() -> String) {
     }
 }
 
-/// Whether an experiment on barriers is on (`VICTORY_BARRIER_TEST`): bit 0
+/// Whether an experiment on barriers is on (`SINOXY_BARRIER_TEST`): bit 0
 /// for `groups` (the title's barrier groups record no wait for earlier
 /// shader writes), bit 1 for `indirect` (the pass that bounds an indirect
 /// command runs without its two such waits; its state changes stay), both
@@ -234,7 +234,7 @@ pub(crate) fn card_waited(us: u64, what: impl FnOnce() -> String) {
 /// what another has not finished writing.
 pub(crate) fn barrier_test() -> u8 {
     static TEST: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *TEST.get_or_init(|| match std::env::var("VICTORY_BARRIER_TEST").as_deref() {
+    *TEST.get_or_init(|| match std::env::var("SINOXY_BARRIER_TEST").as_deref() {
         Ok("groups") => 1,
         Ok("indirect") => 2,
         Ok("both") => 3,
@@ -481,10 +481,10 @@ fn system_memory() -> (u64, u64) {
 
 /// Whether the address space is walked for the memory map line
 /// ([`log_memory_map`]). On by default (this module is in diagnostics
-/// builds only); `VICTORY_MEMORY_MAP=0` leaves the walk out.
+/// builds only); `SINOXY_MEMORY_MAP=0` leaves the walk out.
 fn memory_map() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_MEMORY_MAP").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_MEMORY_MAP").is_none_or(|v| v != "0"))
 }
 
 /// Asks which of the pages in `asked` (address, answer) are in physical

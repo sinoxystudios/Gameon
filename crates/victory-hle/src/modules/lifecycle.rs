@@ -231,7 +231,7 @@ pub(crate) fn end_title(why: &'static str, then: Box<dyn FnOnce() + Send>) {
 
 /// Set in the environment of a relaunched `victory`: an inherited handle
 /// of the process it replaces.
-const RELAUNCHED_FROM: &str = "VICTORY_RELAUNCHED_FROM";
+const RELAUNCHED_FROM: &str = "SINOXY_RELAUNCHED_FROM";
 
 /// Starts `victory` again with `args` (after the title has suspended); the
 /// new process waits until this one has ended.

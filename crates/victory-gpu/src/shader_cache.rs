@@ -1,5 +1,5 @@
 //! Translated shaders kept on disk (decision 0003): under the configured
-//! cache folder, keyed by the container's content and by the VIctory build
+//! cache folder, keyed by the container's content and by the Sinoxy build
 //! that translated it (the BLAKE3 of our executable), so a rebuilt
 //! translator never serves an old translation. Entries go through
 //! `victory-pipeline`'s content-addressed cache, which writes them
@@ -48,7 +48,7 @@ fn build() -> &'static [u8; 32] {
         if limit != victory_shader::emit::DEFAULT_LOOP_LIMIT {
             tracing::warn!(
                 limit,
-                "VICTORY_SHADER_LOOP_LIMIT: translated loops stop sooner"
+                "SINOXY_SHADER_LOOP_LIMIT: translated loops stop sooner"
             );
         }
         match exe {
@@ -57,14 +57,14 @@ fn build() -> &'static [u8; 32] {
                 // Which group barriers wait is part of the translation too.
                 bytes.push(victory_shader::emit::group_sync());
                 // So are the switches that pick the form of a wave64 program:
-                // without them here a run with `VICTORY_WAVE_WIDE=0` was
+                // without them here a run with `SINOXY_WAVE_WIDE=0` was
                 // served the translations an earlier run of the same
                 // executable had cached with the switch unset.
                 for name in [
-                    "VICTORY_WAVE_WIDE",
-                    "VICTORY_WAVE_DEEP_SKIPS",
-                    "VICTORY_WAVE_OWN_BITS",
-                    "VICTORY_F16_NEAREST",
+                    "SINOXY_WAVE_WIDE",
+                    "SINOXY_WAVE_DEEP_SKIPS",
+                    "SINOXY_WAVE_OWN_BITS",
+                    "SINOXY_F16_NEAREST",
                 ] {
                     bytes.extend_from_slice(name.as_bytes());
                     bytes.push(b'=');

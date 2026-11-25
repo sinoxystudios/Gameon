@@ -119,7 +119,7 @@ impl Reader<'_> {
 }
 
 impl Tables {
-    /// The tables VIctory ships with.
+    /// The tables Sinoxy ships with.
     pub fn builtin() -> Result<Tables, Error> {
         Tables::parse(include_bytes!("bcpack-tables.bin"))
     }
@@ -1568,13 +1568,13 @@ mod tests {
     }
 
     /// Compares with reference outputs made outside the repository:
-    /// `VICTORY_BCPACK_TABLES` (the table file) and `VICTORY_BCPACK_CASES`, a
+    /// `SINOXY_BCPACK_TABLES` (the table file) and `SINOXY_BCPACK_CASES`, a
     /// directory of `<name>.bc<n>` packed chunks with `<name>.out` beside them.
     #[test]
     #[ignore = "needs the format tables and reference chunks"]
     fn reference_chunks() {
-        let tables = std::env::var_os("VICTORY_BCPACK_TABLES").expect("VICTORY_BCPACK_TABLES");
-        let cases = std::env::var_os("VICTORY_BCPACK_CASES").expect("VICTORY_BCPACK_CASES");
+        let tables = std::env::var_os("SINOXY_BCPACK_TABLES").expect("SINOXY_BCPACK_TABLES");
+        let cases = std::env::var_os("SINOXY_BCPACK_CASES").expect("SINOXY_BCPACK_CASES");
         let t = Tables::parse(&std::fs::read(tables).unwrap()).unwrap();
         let mut n = 0;
         for entry in std::fs::read_dir(cases).unwrap() {

@@ -27,7 +27,7 @@
 //!   store may fall between any two reads or before both: the title's code
 //!   cannot tell which).
 //!
-//! Which passes run is `emit::shader_opt()` (`VICTORY_SHADER_OPT`), part of
+//! Which passes run is `emit::shader_opt()` (`SINOXY_SHADER_OPT`), part of
 //! the translation and so of the shader cache's key.
 
 use std::collections::HashMap;

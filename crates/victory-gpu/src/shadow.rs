@@ -105,7 +105,7 @@ struct Card {
 
 /// Whether the host copies of big title buffers are in the card's own
 /// memory (on by default since run 75 showed it holds: the BVH skinning
-/// list went from 50.5 to 4.5 ms on the card; `VICTORY_CARD_BUFFERS=0`
+/// list went from 50.5 to 4.5 ms on the card; `SINOXY_CARD_BUFFERS=0`
 /// keeps every copy in the PC's memory, as before. Read when a copy is
 /// made, so it takes a fresh start).
 ///
@@ -136,13 +136,13 @@ struct Card {
 /// range holds its piece (before: never).
 pub(crate) fn cards() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_CARD_BUFFERS").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_CARD_BUFFERS").is_none_or(|v| v != "0"))
 }
 
 /// The smallest title buffer whose copy goes to the card's memory, and the
 /// most bytes of such copies (their "before" twins not counted: a copy
 /// shaders write takes its size twice), both in bytes:
-/// `VICTORY_CARD_BUFFERS_MIN_MB` (16) and `VICTORY_CARD_BUFFERS_MB` (512).
+/// `SINOXY_CARD_BUFFERS_MIN_MB` (16) and `SINOXY_CARD_BUFFERS_MB` (512).
 /// Run 69's gameplay has ten title buffers of 16 MiB or more, 494 MB, and
 /// 1,650 MB of the card's budget free.
 fn card_limits() -> (u64, u64) {
@@ -151,7 +151,7 @@ fn card_limits() -> (u64, u64) {
         let mb = |name: &str, default: u64| {
             std::env::var(name).ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(default) << 20
         };
-        (mb("VICTORY_CARD_BUFFERS_MIN_MB", 16).max(1 << 20), mb("VICTORY_CARD_BUFFERS_MB", 512))
+        (mb("SINOXY_CARD_BUFFERS_MIN_MB", 16).max(1 << 20), mb("SINOXY_CARD_BUFFERS_MB", 512))
     })
 }
 
@@ -225,7 +225,7 @@ fn card_for(size: u64) -> Option<ID3D12Resource> {
 }
 
 /// The most bytes of windows outside buffers whose copies go to the card's
-/// memory (`VICTORY_CARD_WINDOWS_MB`; 0, the default, none).
+/// memory (`SINOXY_CARD_WINDOWS_MB`; 0, the default, none).
 ///
 /// Windows are two thirds of the PC memory the card shares (run 104: 861
 /// windows, 3,552 MB of 5,400), and every draw that takes vertices, indices
@@ -245,7 +245,7 @@ fn card_for(size: u64) -> Option<ID3D12Resource> {
 fn window_card_most() -> u64 {
     static MOST: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
     *MOST.get_or_init(|| {
-        std::env::var("VICTORY_CARD_WINDOWS_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(0) << 20
+        std::env::var("SINOXY_CARD_WINDOWS_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(0) << 20
     })
 }
 
@@ -454,7 +454,7 @@ mod card_tests {
 
 /// Whether the copy-back of what shaders wrote runs on a thread of its own,
 /// beside the submitting thread and outside the submission lock
-/// (`VICTORY_RELAY=1` or `2`; off by default; not with kept snapshots,
+/// (`SINOXY_RELAY=1` or `2`; off by default; not with kept snapshots,
 /// [`keeps`]). `crate::host::relay` says what it does; here it changes
 /// what a copy keeps:
 ///
@@ -470,7 +470,7 @@ mod card_tests {
 ///   had not received from bytes the card wrote.
 pub(crate) fn relay() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var("VICTORY_RELAY").is_ok_and(|v| v == "1" || v == "2") && !keeps())
+    *ON.get_or_init(|| std::env::var("SINOXY_RELAY").is_ok_and(|v| v == "1" || v == "2") && !keeps())
 }
 
 /// The submission being prepared (its number among those started): what
@@ -937,7 +937,7 @@ unsafe fn copy_wide(src: *const u8, dst: *mut u8, len: usize) {
 
 /// Whether the snapshots of a submission's shader-written ranges, and the
 /// compare that finds what the shaders wrote, run on several threads
-/// across ranges (`VICTORY_WIDE_BACK=1`; off by default).
+/// across ranges (`SINOXY_WIDE_BACK=1`; off by default).
 ///
 /// Both ran range by range on the submitting thread, a range on several
 /// threads only if it was 16 MiB or more. The ranges left on the CPU's side
@@ -958,7 +958,7 @@ unsafe fn copy_wide(src: *const u8, dst: *mut u8, len: usize) {
 /// lists only afterwards).
 pub(crate) fn wide_back() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WIDE_BACK").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WIDE_BACK").is_some_and(|v| v == "1"))
 }
 
 type Job = Box<dyn FnOnce() + Send>;
@@ -1210,7 +1210,7 @@ static BACK_CLASS: [AtomicU64; 7] = [const { AtomicU64::new(0) }; 7];
 
 /// For the frame-rate line: where the CPU's search for shader writes goes
 /// (per frame). A copy of a title buffer can go to the card's memory,
-/// where the card does the search (`VICTORY_CARD_BUFFERS_MIN_MB`); a
+/// where the card does the search (`SINOXY_CARD_BUFFERS_MIN_MB`); a
 /// window outside buffers cannot as the code stands.
 pub(crate) fn back_line(frames: f64) {
     let c: Vec<f64> = BACK_CLASS.iter().map(|c| c.swap(0, Ordering::Relaxed) as f64 / frames).collect();
@@ -1221,7 +1221,7 @@ pub(crate) fn back_line(frames: f64) {
     tracing::info!(
         "shader writes looked for on the CPU per frame: {:.1} MB compared in {:.0} ranges of windows outside buffers ({:.1} MB \
          snapshotted), {:.1} MB in {:.0} ranges of title buffers' copies ({:.1} MB snapshotted), of them {:.1} MB in copies \
-         of 1 MiB or more (VICTORY_CARD_BUFFERS_MIN_MB=1 would have the card look there)",
+         of 1 MiB or more (SINOXY_CARD_BUFFERS_MIN_MB=1 would have the card look there)",
         mb(c[2]),
         c[5],
         mb(c[0]),
@@ -1414,7 +1414,7 @@ impl Drop for Shadow {
 
 /// Whether a copy's snapshot is kept from one submission to the next and
 /// only the pieces that changed in between are taken again
-/// (`VICTORY_KEEP_SNAPSHOTS=1`; off by default).
+/// (`SINOXY_KEEP_SNAPSHOTS=1`; off by default).
 ///
 /// A snapshot is the copy's bytes before a submission, to find what its
 /// shaders wrote. Taken anew for every submission it is 1,050 MB of copying
@@ -1433,18 +1433,18 @@ impl Drop for Shadow {
 /// wrote there since.
 fn keeps() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_KEEP_SNAPSHOTS").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_KEEP_SNAPSHOTS").is_some_and(|v| v == "1"))
 }
 
 /// Bytes of the snapshots kept, and the most that may be.
 static KEPT_BYTES: AtomicU64 = AtomicU64::new(0);
-/// `VICTORY_KEEP_SNAPSHOTS_MB`, 256 unless set (it was 768: run 80, with
+/// `SINOXY_KEEP_SNAPSHOTS_MB`, 256 unless set (it was 768: run 80, with
 /// kept snapshots beside copies in the card's memory, ran the PC out of
 /// memory in 27 s; kept snapshots are the PC's memory, all of it resident).
 fn kept_most() -> u64 {
     static MOST: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
     *MOST.get_or_init(|| {
-        std::env::var("VICTORY_KEEP_SNAPSHOTS_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(256) << 20
+        std::env::var("SINOXY_KEEP_SNAPSHOTS_MB").ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(256) << 20
     })
 }
 
@@ -2848,7 +2848,7 @@ fn lookup(address: u64, len: u64, any: bool) -> Option<Arc<Shadow>> {
 const WINDOW: u64 = 4 << 20;
 
 /// The grid the windows of asks with a length are cut on, in bytes: 4 MiB
-/// unless `VICTORY_WINDOW_KB` names a smaller power of two (64 at least).
+/// unless `SINOXY_WINDOW_KB` names a smaller power of two (64 at least).
 /// A window is the PC's memory, all of it, however little of it is read:
 /// 803 windows held 3.3 GB in run 60's gameplay, and all that was ever
 /// asked for in them lay within 1.6 GB. On a grid of 1 MiB or 256 KiB a
@@ -2861,7 +2861,7 @@ const WINDOW: u64 = 4 << 20;
 fn window() -> u64 {
     static GRID: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
     *GRID.get_or_init(|| {
-        let kb = std::env::var("VICTORY_WINDOW_KB").ok().and_then(|v| v.trim().parse::<u64>().ok());
+        let kb = std::env::var("SINOXY_WINDOW_KB").ok().and_then(|v| v.trim().parse::<u64>().ok());
         grid(kb)
     })
 }
@@ -2891,16 +2891,16 @@ fn window_of(address: u64, end: u64, grid: u64) -> (u64, u64) {
 /// window is the cell's tail from the ask's step on ([`TAIL_STEP`]); an ask
 /// lower in the cell later makes a longer tail, which every ask from then
 /// on takes, and the shorter one goes when nothing holds it any more.
-/// shortcut: off unless `VICTORY_WINDOW_TAILS=1`. A longer tail is another
+/// shortcut: off unless `SINOXY_WINDOW_TAILS=1`. A longer tail is another
 /// host buffer than the shorter one: what was bound to the shorter stays
 /// right only because every list brings up to date the copy it bound
 /// (`draw.rs` keeps a root view's copy with its slot). It pays only
-/// together with `VICTORY_WINDOW_KB` below 4096: on the 4 MiB grid an ask
+/// together with `SINOXY_WINDOW_KB` below 4096: on the 4 MiB grid an ask
 /// with a length in the same cell makes the whole cell's window, and the
 /// tail is that.
 fn tails() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WINDOW_TAILS").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WINDOW_TAILS").is_some_and(|v| v == "1"))
 }
 
 /// Tails begin on multiples of this. A longer tail is a new host buffer,

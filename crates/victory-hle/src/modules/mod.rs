@@ -2,7 +2,7 @@
 //!
 //! Adding an API: write an `extern "system"` function named exactly like
 //! the import, then list it with `hle_export!` in the module's `module()`.
-//! Run `victory census` over your titles to see what is still missing.
+//! Run `sinoxy census` over your titles to see what is still missing.
 //!
 //! Planned areas (driven by census results, not by completeness):
 //! `file` (package paths), `thread` (TLS callbacks for title threads),

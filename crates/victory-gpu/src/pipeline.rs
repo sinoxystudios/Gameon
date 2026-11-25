@@ -136,9 +136,9 @@ impl Shader {
         self.translated
             .get_or_init(|| {
                 let done = translate(&self.container);
-                // `VICTORY_SHADER_SAVE=<dir>`: each shader as the title gave it (`.cdxil`) and as
+                // `SINOXY_SHADER_SAVE=<dir>`: each shader as the title gave it (`.cdxil`) and as
                 // translated (`.dxil`), by the hash crash reports name it with
-                if let Some(dir) = std::env::var_os("VICTORY_SHADER_SAVE") {
+                if let Some(dir) = std::env::var_os("SINOXY_SHADER_SAVE") {
                     let dir = std::path::PathBuf::from(dir);
                     let _ = std::fs::create_dir_all(&dir);
                     let stem = format!("{}.{}", self.hash, self.stage);
@@ -213,7 +213,7 @@ fn translate(container: &[u8]) -> Result<Translated, String> {
 /// made" would be a dropped stage). One that cannot be made turns the
 /// builder off for the rest of the run.
 ///
-/// shortcut: and only with `VICTORY_BVH_BUILDER=1`, until a run has shown
+/// shortcut: and only with `SINOXY_BVH_BUILDER=1`, until a run has shown
 /// the whole builder and the host side of title memory by address
 /// (`memory.rs`) working on a card; nothing reads the structures before
 /// the programs that walk them translate.
@@ -249,7 +249,7 @@ fn of_builder(shaders: &[Arc<Shader>]) -> bool {
         .is_some_and(|programs| programs.iter().any(victory_shader::spill::is_spilled))
 }
 
-/// `VICTORY_BVH_QUARANTINE=1`: what the structure builder's stages store
+/// `SINOXY_BVH_QUARANTINE=1`: what the structure builder's stages store
 /// stays in the host's copies and is not copied back into title memory. A
 /// check for a first run of the whole builder: a stage that stores where
 /// it should not can then not reach the title's own objects (run 98), and
@@ -260,7 +260,7 @@ fn of_builder(shaders: &[Arc<Shader>]) -> bool {
 #[cfg(windows)]
 pub(crate) fn builder_quarantined(this: This) -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    is_builder(this) && *ON.get_or_init(|| std::env::var_os("VICTORY_BVH_QUARANTINE").is_some_and(|v| v == "1"))
+    is_builder(this) && *ON.get_or_init(|| std::env::var_os("SINOXY_BVH_QUARANTINE").is_some_and(|v| v == "1"))
 }
 
 /// Whether the title's pipeline `this` is one of the structure builder's.
@@ -284,7 +284,7 @@ pub(crate) fn builder_off(why: &'static str) {
 #[cfg(windows)]
 pub(crate) fn builder_runs() -> bool {
     static ALLOWED: OnceLock<bool> = OnceLock::new();
-    if !*ALLOWED.get_or_init(|| std::env::var_os("VICTORY_BVH_BUILDER").is_some_and(|v| v == "1")) {
+    if !*ALLOWED.get_or_init(|| std::env::var_os("SINOXY_BVH_BUILDER").is_some_and(|v| v == "1")) {
         return false;
     }
     let mut b = BUILDER.lock().unwrap_or_else(|e| e.into_inner());
@@ -418,7 +418,7 @@ fn parse_skip_hashes(value: &str) -> Vec<String> {
             } else {
                 tracing::warn!(
                     hash,
-                    "VICTORY_SKIP_PIPELINES expects 16-digit shader hashes"
+                    "SINOXY_SKIP_PIPELINES expects 16-digit shader hashes"
                 );
                 None
             }
@@ -430,7 +430,7 @@ fn parse_skip_hashes(value: &str) -> Vec<String> {
 fn skipped_shader(p: &Pipeline) -> Option<&str> {
     static HASHES: OnceLock<Vec<String>> = OnceLock::new();
     let hashes = HASHES.get_or_init(|| {
-        let value = std::env::var("VICTORY_SKIP_PIPELINES").unwrap_or_default();
+        let value = std::env::var("SINOXY_SKIP_PIPELINES").unwrap_or_default();
         parse_skip_hashes(&value)
     });
     if hashes.is_empty() {

@@ -12,7 +12,7 @@
 /tests/fixtures/*/target/
 
 # Local configuration (contains paths to YOUR files)
-/victory.toml
+/sinoxy.toml
 
 # Places people tend to drop data into. Keep data outside the repo instead.
 /game/

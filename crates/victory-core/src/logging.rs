@@ -1,7 +1,7 @@
 //! One tracing setup for every binary.
 //!
-//! Filter with `VICTORY_LOG` (falls back to `RUST_LOG`), e.g.
-//! `VICTORY_LOG=victory_loader=trace,info`. Debug and trace output exist
+//! Filter with `SINOXY_LOG` (falls back to `RUST_LOG`), e.g.
+//! `SINOXY_LOG=victory_loader=trace,info`. Debug and trace output exist
 //! only in builds with the `diagnostics` feature; a plain release build
 //! logs info and above whatever the filter asks for.
 
@@ -18,7 +18,7 @@ const CAP: LevelFilter = if cfg!(feature = "diagnostics") {
 };
 
 pub fn init(default_level: &str) {
-    let filter = std::env::var("VICTORY_LOG")
+    let filter = std::env::var("SINOXY_LOG")
         .or_else(|_| std::env::var("RUST_LOG"))
         .ok()
         .and_then(|v| EnvFilter::try_new(v).ok())

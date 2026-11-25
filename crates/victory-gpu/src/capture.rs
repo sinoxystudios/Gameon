@@ -1,5 +1,5 @@
 //! Presented frames written to PNG files, to see what reaches the screen:
-//! with `VICTORY_CAPTURE=<folder>`, every frame whose number is a power of
+//! with `SINOXY_CAPTURE=<folder>`, every frame whose number is a power of
 //! two (the frames the log reports) is saved as `frame-<n>.png`, at half
 //! size. Only in builds with diagnostics.
 
@@ -12,35 +12,35 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 pub(crate) fn folder() -> Option<&'static PathBuf> {
     static FOLDER: std::sync::OnceLock<Option<PathBuf>> = std::sync::OnceLock::new();
     FOLDER
-        .get_or_init(|| std::env::var_os("VICTORY_CAPTURE").map(PathBuf::from))
+        .get_or_init(|| std::env::var_os("SINOXY_CAPTURE").map(PathBuf::from))
         .as_ref()
 }
 
-/// Frames listed in `VICTORY_CAPTURE_FRAMES` (comma-separated): saved
+/// Frames listed in `SINOXY_CAPTURE_FRAMES` (comma-separated): saved
 /// too, and their draws traced at debug level.
 pub(crate) fn listed(n: u64) -> bool {
     static LIST: std::sync::OnceLock<Vec<u64>> = std::sync::OnceLock::new();
     let named = LIST
         .get_or_init(|| {
-            let list = std::env::var("VICTORY_CAPTURE_FRAMES").unwrap_or_default();
+            let list = std::env::var("SINOXY_CAPTURE_FRAMES").unwrap_or_default();
             list.split(',')
                 .filter_map(|f| f.trim().parse().ok())
                 .collect()
         })
         .contains(&n);
-    // `VICTORY_CAPTURE_WORLD`: also the 2nd and the 6th frame after the first
+    // `SINOXY_CAPTURE_WORLD`: also the 2nd and the 6th frame after the first
     // one that ran 500 draws or more (a title's first 3D frames: their
     // numbers depend on how long the menus were shown), and the 30th and
     // the 80th (the title opens with a cutscene made in the
     // engine: later shots of it, in case the first is dark by design).
     //
-    // `VICTORY_CAPTURE_WORLD_ALSO` (comma-separated): more frames counted
+    // `SINOXY_CAPTURE_WORLD_ALSO` (comma-separated): more frames counted
     // from that first one (the title's blue patches show from
     // about the 118th frame on, when the window's model has arrived and
     // the reflections hold values: none of the four above has them).
     static ALSO: std::sync::OnceLock<Vec<u64>> = std::sync::OnceLock::new();
     let also = ALSO.get_or_init(|| {
-        let list = std::env::var("VICTORY_CAPTURE_WORLD_ALSO").unwrap_or_default();
+        let list = std::env::var("SINOXY_CAPTURE_WORLD_ALSO").unwrap_or_default();
         list.split(',')
             .filter_map(|f| f.trim().parse().ok())
             .collect()
@@ -114,13 +114,13 @@ static RING: std::sync::Mutex<std::collections::VecDeque<String>> =
 #[cfg(feature = "diagnostics")]
 const RING_LINES: usize = 6000;
 
-/// Whether `VICTORY_CAPTURE_WORLD` is set.
+/// Whether `SINOXY_CAPTURE_WORLD` is set.
 fn world_on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_CAPTURE_WORLD").is_some())
+    *ON.get_or_init(|| std::env::var_os("SINOXY_CAPTURE_WORLD").is_some())
 }
 
-/// The first frame that ran 500 draws or more (`VICTORY_CAPTURE_WORLD`).
+/// The first frame that ran 500 draws or more (`SINOXY_CAPTURE_WORLD`).
 static WORLD: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(u64::MAX);
 
 /// At the present of `frame`: the draws run on the host so far.
@@ -144,7 +144,7 @@ pub(crate) fn frame_drew(frame: u64, drawn: u64) {
 
 /// Whether frame `n` is saved.
 pub(crate) fn wanted(n: u64) -> bool {
-    // Before the world, with `VICTORY_CAPTURE_WORLD`: every 16th frame too
+    // Before the world, with `SINOXY_CAPTURE_WORLD`: every 16th frame too
     // (small pictures of menus, loading screens and title cards).
     let before_world = world_on() && n.is_multiple_of(16) && WORLD.load(std::sync::atomic::Ordering::Relaxed) == u64::MAX;
     // In the world: every 8th frame's picture, a timeline of the opening
@@ -330,8 +330,8 @@ pub(crate) fn save_read_back(
     }
 }
 
-/// With `VICTORY_DUMP_TARGETS` set: title textures the frames listed in
-/// `VICTORY_CAPTURE_FRAMES` render to or write, in first-use order, saved
+/// With `SINOXY_DUMP_TARGETS` set: title textures the frames listed in
+/// `SINOXY_CAPTURE_FRAMES` render to or write, in first-use order, saved
 /// at that frame's present as `frame-<n>-<i>-<resource>-<w>x<h>-f<format>.png`
 /// (what each holds at the end of the frame; formats normalized to show
 /// structure: floats scaled by their largest value, depth by its range).
@@ -342,7 +342,7 @@ static TARGETS: std::sync::Mutex<Vec<(usize, std::sync::Arc<crate::resource::Hos
 
 fn dump_on() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| folder().is_some() && std::env::var_os("VICTORY_DUMP_TARGETS").is_some())
+    *ON.get_or_init(|| folder().is_some() && std::env::var_os("SINOXY_DUMP_TARGETS").is_some())
 }
 
 /// Notes a title texture the frame being built renders to or writes.

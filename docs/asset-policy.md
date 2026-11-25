@@ -28,7 +28,7 @@ In any form (files, string literals, fixtures, snapshots, docs):
 `crates/victory-formats/src/bcpack-tables.bin` (about 78 KB): the constant
 tables of the BCPack format (entropy models, index rank tables, control
 codes, per-format dictionaries). A BCPack stream cannot be decoded without
-exactly these tables and they cannot be derived, so they ship with VIctory
+exactly these tables and they cannot be derived, so they ship with Sinoxy
 by the project owner's decision (2026-11-23), entered as an exception in
 `xtask/src/policy.rs`. They are part of the format, not our work, and the
 repository's licence does not cover them. Nothing else of this kind is
@@ -36,9 +36,9 @@ accepted.
 
 ## Where data lives
 
-Outside the repository, configured in `victory.toml`: `game_dir` (the
+Outside the repository, configured in `sinoxy.toml`: `game_dir` (the
 user's dump), `test_titles`, and `cache_dir` for everything derived
-(default `%LOCALAPPDATA%\victory\cache`).
+(default `%LOCALAPPDATA%\sinoxy\cache`).
 
 ## Enforcement
 

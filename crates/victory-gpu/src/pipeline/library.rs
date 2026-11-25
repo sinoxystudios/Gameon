@@ -21,7 +21,7 @@
 //! 87 to 96 of 110 looks at each worker found it waiting for that lock
 //! (run 49), and an earlier run's 2,300 pipelines, all in the library, were
 //! still being loaded 46 s into the opening cutscene.
-//! `VICTORY_LIBRARY_LOCK=1`: one call at a time, as before.
+//! `SINOXY_LIBRARY_LOCK=1`: one call at a time, as before.
 //!
 //! The library's file is mapped, not read into memory ([`Blob`]): the host
 //! keeps pointing into the bytes it was made from for as long as it lives,
@@ -31,7 +31,7 @@
 //! system can drop them without writing them anywhere. A save writes the
 //! new library through a mapping of the new file in the same way (a buffer
 //! of the library's size was made, filled and written out at each save).
-//! `VICTORY_LIBRARY_MAP=0`: read and written through buffers, as before.
+//! `SINOXY_LIBRARY_MAP=0`: read and written through buffers, as before.
 //!
 //! The mapped file's handle stays open for as long as the mapping lives
 //! ([`holds`]). A save renames the new library over the file this run has
@@ -45,7 +45,7 @@
 //! library run 77 saved from such pages was refused by run 78). Measured
 //! with a 64 MB file written past the system's cache, mapped and replaced:
 //! 16,352 of 16,384 pages read zeros with the handle closed, none with it
-//! open (the test below). `VICTORY_LIBRARY_HANDLE=0`: closed, as before.
+//! open (the test below). `SINOXY_LIBRARY_HANDLE=0`: closed, as before.
 
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -75,19 +75,19 @@ pub(crate) static BLOB: AtomicU64 = AtomicU64::new(0);
 pub(crate) static SAVED: AtomicU64 = AtomicU64::new(0);
 
 /// Whether the library's file is mapped ([`Blob`]) and saved through a
-/// mapping. On by default; `VICTORY_LIBRARY_MAP=0` uses buffers, as before.
+/// mapping. On by default; `SINOXY_LIBRARY_MAP=0` uses buffers, as before.
 fn mapped() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LIBRARY_MAP").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LIBRARY_MAP").is_none_or(|v| v != "0"))
 }
 
 /// Whether the mapped library file's handle is kept open while it is
 /// mapped (see the module's notes: without it a save in the same run turns
 /// the mapping's pages into zeros as they leave memory). On by default;
-/// `VICTORY_LIBRARY_HANDLE=0` closes it after mapping, as before.
+/// `SINOXY_LIBRARY_HANDLE=0` closes it after mapping, as before.
 fn holds() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LIBRARY_HANDLE").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LIBRARY_HANDLE").is_none_or(|v| v != "0"))
 }
 
 /// A whole file mapped into memory: read-only (the library's file) or
@@ -193,7 +193,7 @@ impl Drop for Mapped {
 enum Blob {
     /// No file (an empty library).
     None,
-    /// The file read into memory (`VICTORY_LIBRARY_MAP=0`, tests, or a file
+    /// The file read into memory (`SINOXY_LIBRARY_MAP=0`, tests, or a file
     /// that could not be mapped).
     Held(Vec<u8>),
     /// The file itself, mapped.
@@ -313,7 +313,7 @@ pub(crate) fn removal_note() -> String {
     let _ = write!(
         text,
         "; its file is mapped ({len} bytes), the handle {}",
-        if holds() { "kept open" } else { "closed (VICTORY_LIBRARY_HANDLE=0)" }
+        if holds() { "kept open" } else { "closed (SINOXY_LIBRARY_HANDLE=0)" }
     );
     match REPLACED[0].load(Ordering::Relaxed) {
         0 => text.push_str("; this run has not replaced the file"),
@@ -361,7 +361,7 @@ pub(crate) fn removal_note() -> String {
 /// while nothing else wants the memory, and come back on the next read.
 /// Called once a second by the sweep; does its work on a thread of its own
 /// (hundreds of thousands of pages), once after each burst of loads.
-/// `VICTORY_LIBRARY_TRIM=0`: the pages stay until Windows takes them.
+/// `SINOXY_LIBRARY_TRIM=0`: the pages stay until Windows takes them.
 pub(crate) fn trim() {
     const QUIET_MS: u64 = 10_000;
     static ON: OnceLock<bool> = OnceLock::new();
@@ -369,7 +369,7 @@ pub(crate) fn trim() {
     if at == 0
         || TRIMMED.load(Ordering::Relaxed)
         || crate::host::now_ms() < LOADED_AT.load(Ordering::Relaxed) + QUIET_MS
-        || !*ON.get_or_init(|| std::env::var_os("VICTORY_LIBRARY_TRIM").is_none_or(|v| v != "0"))
+        || !*ON.get_or_init(|| std::env::var_os("SINOXY_LIBRARY_TRIM").is_none_or(|v| v != "0"))
         || TRIMMED.swap(true, Ordering::Relaxed)
     {
         return;
@@ -417,11 +417,11 @@ fn same_name(name: &str) -> MutexGuard<'static, ()> {
     LOADING[at % LOADING.len()].lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// With `VICTORY_LIBRARY_LOCK=1`: held by every library call, as before.
+/// With `SINOXY_LIBRARY_LOCK=1`: held by every library call, as before.
 fn one_call() -> Option<MutexGuard<'static, ()>> {
     static ON: OnceLock<bool> = OnceLock::new();
     static CALLING: Mutex<()> = Mutex::new(());
-    ON.get_or_init(|| std::env::var_os("VICTORY_LIBRARY_LOCK").is_some_and(|v| v == "1"))
+    ON.get_or_init(|| std::env::var_os("SINOXY_LIBRARY_LOCK").is_some_and(|v| v == "1"))
         .then(|| CALLING.lock().unwrap_or_else(|e| e.into_inner()))
 }
 
@@ -642,7 +642,7 @@ pub(crate) fn save(now: bool) {
 /// a mapping of that file, so that the bytes are the file's pages and not
 /// 1.3 GB more of the process's own memory for the seconds a save takes;
 /// through a buffer where the file cannot be mapped (and with
-/// `VICTORY_LIBRARY_MAP=0`).
+/// `SINOXY_LIBRARY_MAP=0`).
 fn serialise(library: &ID3D12PipelineLibrary1, tmp: &std::path::Path, size: usize) -> std::io::Result<()> {
     let failed = |e: windows::core::Error| std::io::Error::other(e.to_string());
     if mapped()

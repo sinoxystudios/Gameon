@@ -404,7 +404,7 @@ mod tests {
     /// did not.
     #[test]
     fn exit_child() {
-        if std::env::var_os("VICTORY_EXIT_CHILD").is_none() {
+        if std::env::var_os("SINOXY_EXIT_CHILD").is_none() {
             return;
         }
         static ENDS: AtomicU64 = AtomicU64::new(0);
@@ -427,7 +427,7 @@ mod tests {
     fn exit_ends_the_other_threads_first() {
         let out = std::process::Command::new(std::env::current_exe().unwrap())
             .args(["--exact", "threads::tests::exit_child", "--nocapture"])
-            .env("VICTORY_EXIT_CHILD", "1")
+            .env("SINOXY_EXIT_CHILD", "1")
             .output()
             .unwrap();
         let text = String::from_utf8_lossy(&out.stdout);

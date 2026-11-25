@@ -259,10 +259,10 @@ const QUADS: i32 = 32;
 /// as root descriptors, which have no size: a mesh shader's vertex fetch
 /// has no record limit, and a read past the copy reaches whatever the host
 /// placed after it (memory it has freed: the device is removed, upstream
-/// PR #493). `VICTORY_ROOT_SRV_DIRECT=1` goes back to root descriptors.
+/// PR #493). `SINOXY_ROOT_SRV_DIRECT=1` goes back to root descriptors.
 pub(crate) fn bounded_root_srvs() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_ROOT_SRV_DIRECT").is_none())
+    *ON.get_or_init(|| std::env::var_os("SINOXY_ROOT_SRV_DIRECT").is_none())
 }
 
 /// One stage of a host pipeline and where its bindings go.
@@ -274,7 +274,7 @@ pub(crate) struct Stage {
     pub(crate) root_cbvs: Vec<(u8, u32)>,
     pub(crate) root_srvs: Vec<(u8, u32)>,
     /// Root UAVs: one-view tables like the SRVs (or root descriptors with
-    /// `VICTORY_ROOT_SRV_DIRECT=1`).
+    /// `SINOXY_ROOT_SRV_DIRECT=1`).
     pub(crate) root_uavs: Vec<(u8, u32)>,
 }
 
@@ -862,9 +862,9 @@ mod tests {
         }";
     const PS: &str = "float4 main() : SV_Target { return 1; }";
 
-    /// The PC `dxc.exe` (`VICTORY_PC_DXC`, else the newest Windows SDK's).
+    /// The PC `dxc.exe` (`SINOXY_PC_DXC`, else the newest Windows SDK's).
     fn dxc() -> Option<PathBuf> {
-        let dxc = match std::env::var_os("VICTORY_PC_DXC") {
+        let dxc = match std::env::var_os("SINOXY_PC_DXC") {
             Some(p) => PathBuf::from(p),
             None => victory_shader::emit::validator::Validator::default_path()?
                 .with_file_name("dxc.exe"),

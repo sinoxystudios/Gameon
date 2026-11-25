@@ -220,16 +220,16 @@ static IDLE: std::sync::Mutex<(Vec<Idle>, u64)> = std::sync::Mutex::new((Vec::ne
 
 /// The most host lists kept idle, and the most upload memory they may keep
 /// between them (a list keeps scratch chunks over a reset only while lists
-/// do not share them, `VICTORY_SCRATCH_POOL=0`).
+/// do not share them, `SINOXY_SCRATCH_POOL=0`).
 #[cfg(windows)]
 const IDLE_MOST: (usize, u64) = (128, 256 << 20);
 
 /// Whether host lists that have run are used again (on by default;
-/// `VICTORY_LIST_POOL=0`: each is made new and thrown away, as before).
+/// `SINOXY_LIST_POOL=0`: each is made new and thrown away, as before).
 #[cfg(windows)]
 fn pools() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LIST_POOL").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LIST_POOL").is_none_or(|v| v != "0"))
 }
 
 /// A host list open for recording: one that has run, as a title's list is
@@ -924,7 +924,7 @@ extern "system" fn copy_texture_region(
             // title's buffer (`HostList::defer_read_back`).
             // The title reads two tiny float targets back every frame (5x1
             // and 1x1 RGBA32F, 80 and 16 bytes: run 90), and read a buffer
-            // nobody wrote. `VICTORY_READ_BACK=0` leaves them unmade, as
+            // nobody wrote. `SINOXY_READ_BACK=0` leaves them unmade, as
             // before.
             static COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
             let n = COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
@@ -1057,7 +1057,7 @@ fn read_back(
     use windows::core::Interface;
     const FOOTPRINT: u32 = 1;
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if !*ON.get_or_init(|| std::env::var_os("VICTORY_READ_BACK").is_none_or(|v| v != "0")) {
+    if !*ON.get_or_init(|| std::env::var_os("SINOXY_READ_BACK").is_none_or(|v| v != "0")) {
         return Err("switched off");
     }
     if dst.kind != FOOTPRINT || src.kind == FOOTPRINT {
@@ -1782,7 +1782,7 @@ impl ValueWait {
     /// 1.0-2.2 s of every cutscene frame on the thread that submits (runs
     /// 36-49: "between its submissions ... kernel"; 47 of 110 looks at
     /// that thread in run 49 found it in this question).
-    /// `VICTORY_WAIT_ASK=1` asks first, as before.
+    /// `SINOXY_WAIT_ASK=1` asks first, as before.
     pub(crate) fn met(&self) -> bool {
         #[cfg(all(windows, feature = "diagnostics"))]
         let started = std::time::Instant::now();
@@ -1802,7 +1802,7 @@ impl ValueWait {
             return true;
         }
         static ASK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if *ASK.get_or_init(|| std::env::var_os("VICTORY_WAIT_ASK").is_some_and(|v| v == "1"))
+        if *ASK.get_or_init(|| std::env::var_os("SINOXY_WAIT_ASK").is_some_and(|v| v == "1"))
             && !crate::texture::committed(self.address as *const u8, bytes)
         {
             return true;
@@ -1937,7 +1937,7 @@ extern "system" fn wait_value64(this: This, address: u64, comparison: u32, refer
 /// first, so only their ordering matters: one barrier on every shader
 /// write (the title's buffer barriers order compute passes).
 extern "system" fn barrier_groups(this: This, count: u32, _groups: *const u8) {
-    // Diagnostics: counted, and left out under `VICTORY_BARRIER_TEST=groups`.
+    // Diagnostics: counted, and left out under `SINOXY_BARRIER_TEST=groups`.
     #[cfg(all(windows, feature = "diagnostics"))]
     if count > 0 {
         crate::copystat::add(crate::copystat::C::WaitsForGroups, 1);
@@ -1981,7 +1981,7 @@ extern "system" fn write64(this: This, address: u64, value: u64, _flush: u32, fl
 }
 
 /// The title wrote a value at the bottom of the pipe (not a timestamp, not
-/// a query result): listed (diagnostics), and with `VICTORY_CUT_WRITES=1`
+/// a query result): listed (diagnostics), and with `SINOXY_CUT_WRITES=1`
 /// the host list is cut right behind it, so that the value is stored when
 /// the card has run the list up to there, as on the console, and not when
 /// the whole list has run. Lists of other queues wait for these values
@@ -2004,7 +2004,7 @@ fn value_written(this: This, address: u64, value: u64) {
             });
         }
         static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-        if !*ON.get_or_init(|| std::env::var_os("VICTORY_CUT_WRITES").is_some_and(|v| v == "1"))
+        if !*ON.get_or_init(|| std::env::var_os("SINOXY_CUT_WRITES").is_some_and(|v| v == "1"))
             || !crate::queue::cuts()
         {
             return;

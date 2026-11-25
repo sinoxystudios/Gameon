@@ -424,9 +424,9 @@ pub(crate) fn twin_plane_resource<'a>(
 /// or R8 for the stencil plane of a format that has one, with unordered
 /// access only. A format with a stencil plane gets a twin for its depth
 /// plane too, R16 for the console's 16-bit depth-stencil formats and R32
-/// otherwise. `VICTORY_DEPTH_TWINS=0` makes none (such views stay null),
-/// `VICTORY_DEPTH_TWINS=stencil` only those of formats with a stencil
-/// plane, `VICTORY_DEPTH_TWINS=nodepth` none for the depth planes of such
+/// otherwise. `SINOXY_DEPTH_TWINS=0` makes none (such views stay null),
+/// `SINOXY_DEPTH_TWINS=stencil` only those of formats with a stencil
+/// plane, `SINOXY_DEPTH_TWINS=nodepth` none for the depth planes of such
 /// formats.
 #[cfg(windows)]
 fn twin_texture(
@@ -444,7 +444,7 @@ fn twin_texture(
         return None;
     }
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if !*ON.get_or_init(|| std::env::var_os("VICTORY_DEPTH_TWINS").is_none_or(|v| v != "0")) {
+    if !*ON.get_or_init(|| std::env::var_os("SINOXY_DEPTH_TWINS").is_none_or(|v| v != "0")) {
         return None;
     }
     // R32G8X24 and R24G8 typeless: depth with a stencil plane, whose twin
@@ -455,7 +455,7 @@ fn twin_texture(
     let stencil = WITH_STENCIL.contains(&typeless);
     static STENCIL_ONLY: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     let stencil_only = *STENCIL_ONLY
-        .get_or_init(|| std::env::var_os("VICTORY_DEPTH_TWINS").is_some_and(|v| v == "stencil"));
+        .get_or_init(|| std::env::var_os("SINOXY_DEPTH_TWINS").is_some_and(|v| v == "stencil"));
     if !stencil && stencil_only {
         return None;
     }
@@ -530,7 +530,7 @@ fn twin_texture(
     // 120), whose shaders write 16-bit steps, R32 typeless (39) otherwise.
     static NO_PLANE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     let no_plane = *NO_PLANE
-        .get_or_init(|| std::env::var_os("VICTORY_DEPTH_TWINS").is_some_and(|v| v == "nodepth"));
+        .get_or_init(|| std::env::var_os("SINOXY_DEPTH_TWINS").is_some_and(|v| v == "nodepth"));
     let plane = if stencil && !no_plane {
         d.format = if (118..=120).contains(&desc.format) {
             53
@@ -1202,20 +1202,20 @@ static TARGETS_AT: std::sync::Mutex<std::collections::BTreeMap<u64, usize>> =
 /// one layer were found at first, and the programs behind the others read
 /// the title's unwritten memory - the sky light cache's second stage wrote
 /// all zeros from a first stage that held light (run 88).
-/// `VICTORY_ALIAS_COPY=0`: none is found, as before; `=1`: only textures
+/// `SINOXY_ALIAS_COPY=0`: none is found, as before; `=1`: only textures
 /// of one level and one layer, as at first.
 #[cfg(windows)]
 pub(crate) fn alias_of(this: This) -> Option<This> {
     use std::sync::atomic::Ordering::Relaxed;
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     if this.is_null()
-        || !*ON.get_or_init(|| std::env::var_os("VICTORY_ALIAS_COPY").is_none_or(|v| v != "0"))
+        || !*ON.get_or_init(|| std::env::var_os("SINOXY_ALIAS_COPY").is_none_or(|v| v != "0"))
     {
         return None;
     }
     static WHOLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     let whole =
-        *WHOLE.get_or_init(|| std::env::var_os("VICTORY_ALIAS_COPY").is_none_or(|v| v != "1"));
+        *WHOLE.get_or_init(|| std::env::var_os("SINOXY_ALIAS_COPY").is_none_or(|v| v != "1"));
     let r = resource(this);
     // A level count of 0 asks for a full chain: not counted here.
     let one = |d: &ResourceDesc| {
@@ -1246,12 +1246,12 @@ pub(crate) fn alias_of(this: This) -> Option<This> {
 }
 
 /// Whether host copies are made on first use. On by default;
-/// `VICTORY_LAZY_TEXTURES=0` makes each when the title creates its texture,
+/// `SINOXY_LAZY_TEXTURES=0` makes each when the title creates its texture,
 /// as before.
 #[cfg(windows)]
 fn lazy() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LAZY_TEXTURES").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LAZY_TEXTURES").is_none_or(|v| v != "0"))
 }
 
 /// Whether a texture described by `desc` takes its contents from title
@@ -1358,7 +1358,7 @@ pub(crate) fn host_made<'a>(
 /// shaders that pick textures by index (`draw.rs` `heap_textures`): always
 /// up to `FLOOR` bytes of them, beyond that while the card's memory in use
 /// by this process is under nine tenths of the budget the system gives it
-/// (`VICTORY_TEXTURE_BUDGET_MB` sets a limit on those copies' bytes
+/// (`SINOXY_TEXTURE_BUDGET_MB` sets a limit on those copies' bytes
 /// instead). Past the budget the system moves the card's memory into the
 /// PC's, which ended runs 20 and 24.
 #[cfg(windows)]
@@ -1368,7 +1368,7 @@ pub(crate) fn room() -> bool {
     const WITHOUT_BUDGET: u64 = 4 << 30;
     static LIMIT: std::sync::OnceLock<Option<u64>> = std::sync::OnceLock::new();
     let limit = *LIMIT.get_or_init(|| {
-        let mb = std::env::var("VICTORY_TEXTURE_BUDGET_MB").ok()?;
+        let mb = std::env::var("SINOXY_TEXTURE_BUDGET_MB").ok()?;
         mb.trim().parse::<u64>().ok().map(|mb| mb << 20)
     });
     let filled = KINDS[1].load(Relaxed);
@@ -1406,14 +1406,14 @@ pub(crate) fn room() -> bool {
 /// makes the list or the slot hold it) is protected by that idle time alone.
 /// Every caller uses it at once, within the title's call.
 /// Called before a submission starts, by the thread that submits.
-/// `VICTORY_TEXTURE_SWEEP=0` lets nothing go.
+/// `SINOXY_TEXTURE_SWEEP=0` lets nothing go.
 #[cfg(windows)]
 pub(crate) fn let_go_idle() {
     use std::sync::atomic::Ordering::Relaxed;
     const IDLE_MS: u64 = 5_000;
     const IDLE_FRAMES: u64 = 4;
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    if !*ON.get_or_init(|| std::env::var_os("VICTORY_TEXTURE_SWEEP").is_none_or(|v| v != "0")) {
+    if !*ON.get_or_init(|| std::env::var_os("SINOXY_TEXTURE_SWEEP").is_none_or(|v| v != "0")) {
         return;
     }
     // For the trail (`crate::host::trail`): how many went, their bytes,
@@ -2676,7 +2676,7 @@ mod tests {
     /// pattern put into the twin is copied to the depth texture, the twin
     /// is overwritten with zeros, and the pattern comes back from the depth
     /// texture. A copy the host does not allow ends the test (with the
-    /// debug layer's message under `VICTORY_D3D12_DEBUG=1` in a diagnostics
+    /// debug layer's message under `SINOXY_D3D12_DEBUG=1` in a diagnostics
     /// build).
     #[cfg(windows)]
     #[test]

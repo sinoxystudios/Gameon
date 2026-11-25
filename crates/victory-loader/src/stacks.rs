@@ -1,4 +1,4 @@
-//! Where every thread is: `VICTORY_STACKS=<seconds>[,<seconds>...]` prints
+//! Where every thread is: `SINOXY_STACKS=<seconds>[,<seconds>...]` prints
 //! each thread's unwound stack as `module+rva` that many seconds after
 //! [`dump_stacks_on_schedule`], to find what a title waits on.
 
@@ -21,10 +21,10 @@ use windows_sys::Win32::System::Threading::{
 
 use crate::crash::{MAX_FRAMES, locate, unwind_into};
 
-/// Reads `VICTORY_STACKS` and, if set, starts a thread that prints every
+/// Reads `SINOXY_STACKS` and, if set, starts a thread that prints every
 /// thread's stack at each listed time (seconds from now).
 pub fn dump_stacks_on_schedule() {
-    let Ok(list) = std::env::var("VICTORY_STACKS") else {
+    let Ok(list) = std::env::var("SINOXY_STACKS") else {
         return;
     };
     let mut times: Vec<f64> = list
@@ -87,7 +87,7 @@ pub fn dump_stacks() {
     }
     // SAFETY: we opened it.
     unsafe { CloseHandle(snapshot) };
-    eprintln!("VIctory: stacks of {} threads", ids.len());
+    eprintln!("Sinoxy: stacks of {} threads", ids.len());
     for id in ids {
         // SAFETY: opens a thread of our own process.
         let thread = unsafe {

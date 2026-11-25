@@ -1,4 +1,4 @@
-//! Shared plumbing for every VIctory crate and tool.
+//! Shared plumbing for every Sinoxy crate and tool.
 //!
 //! * [`config`]: where the user's files live (never inside the repository).
 //! * [`policy`]: the runtime half of rule #1, refusing to write

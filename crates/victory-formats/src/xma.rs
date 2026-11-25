@@ -1153,14 +1153,14 @@ mod tests {
         assert_eq!(c.next, None);
     }
 
-    /// Walks and decodes saved input buffers (`VICTORY_XMA_STREAMS=<dir>` of
+    /// Walks and decodes saved input buffers (`SINOXY_XMA_STREAMS=<dir>` of
     /// `*.xma` files with their `*.ctx` context words, made outside the
     /// repository): the frames walked from the first packet must be the
     /// frames the packet headers count, and every frame must decode.
     #[test]
     #[ignore = "needs streams outside the repository"]
     fn walks_saved_streams() {
-        let dir = std::env::var("VICTORY_XMA_STREAMS").unwrap();
+        let dir = std::env::var("SINOXY_XMA_STREAMS").unwrap();
         let mut bad = 0;
         let mut streams = 0;
         for entry in std::fs::read_dir(dir).unwrap() {
@@ -1194,18 +1194,18 @@ mod tests {
             );
             bad += u32::from(walked != counted || errors > 0);
         }
-        assert!(streams > 0, "VICTORY_XMA_STREAMS contains no .xma files");
+        assert!(streams > 0, "SINOXY_XMA_STREAMS contains no .xma files");
         assert_eq!(bad, 0);
     }
 
     /// Decodes a stream's packets and compares with a reference decode of
-    /// the same file (16-bit PCM): `VICTORY_XMA_REFERENCE=<dir>` holding
+    /// the same file (16-bit PCM): `SINOXY_XMA_REFERENCE=<dir>` holding
     /// `mono.xmadata`/`mono.ref` and `stereo.xmadata`/`stereo.ref` (made
     /// outside the repository).
     #[test]
     #[ignore = "needs reference files outside the repository"]
     fn matches_a_reference_decoder() {
-        let dir = std::path::PathBuf::from(std::env::var("VICTORY_XMA_REFERENCE").unwrap());
+        let dir = std::path::PathBuf::from(std::env::var("SINOXY_XMA_REFERENCE").unwrap());
         for (name, channels) in [("mono", 1), ("stereo", 2)] {
             let data = std::fs::read(dir.join(format!("{name}.xmadata"))).unwrap();
             let reference: Vec<i16> = std::fs::read(dir.join(format!("{name}.ref")))

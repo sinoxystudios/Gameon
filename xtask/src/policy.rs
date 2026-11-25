@@ -20,7 +20,7 @@ const ALLOWED_NAMES: &[&str] = &[
     ".gitignore",
     ".gitattributes",
     ".editorconfig",
-    ".victory-root",
+    ".sinoxy-root",
     "pre-commit",
     "LICENSE",
     "LICENSE-MIT",

@@ -207,10 +207,10 @@ pub(crate) static STALE: [std::sync::atomic::AtomicU64; 5] =
     [const { std::sync::atomic::AtomicU64::new(0) }; 5];
 
 /// Whether a view written over memory that older views describe otherwise
-/// makes those stale; `VICTORY_STALE_TEXTURES=0` leaves them as they are.
+/// makes those stale; `SINOXY_STALE_TEXTURES=0` leaves them as they are.
 fn stale_out() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_STALE_TEXTURES").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_STALE_TEXTURES").is_none_or(|v| v != "0"))
 }
 
 /// The runtime mapped or unmapped title memory `[at, at + len)`, or is
@@ -266,11 +266,11 @@ pub(crate) static TABLED_WRITES: [std::sync::atomic::AtomicU64; 2] =
     [const { std::sync::atomic::AtomicU64::new(0) }; 2];
 
 /// Whether slots draws read through tables leave the queue of textures
-/// picked by index; `VICTORY_TABLED_TEXTURES=1` keeps them in it as
+/// picked by index; `SINOXY_TABLED_TEXTURES=1` keeps them in it as
 /// before.
 fn tabled_out() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_TABLED_TEXTURES").is_none_or(|v| v != "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_TABLED_TEXTURES").is_none_or(|v| v != "1"))
 }
 
 /// What the queue of textures picked by index knows of a title slot.
@@ -1445,11 +1445,11 @@ pub(crate) fn buffer_extent(view: &View) -> Option<(u64, u64)> {
 }
 
 /// Whether a buffer view is brought up to date in the host copy its slot
-/// shows ([`buffer_copy`]). On by default; `VICTORY_VIEW_EXTENT=0` looks the
+/// shows ([`buffer_copy`]). On by default; `SINOXY_VIEW_EXTENT=0` looks the
 /// copy up by the view's range alone, as before.
 fn view_extent() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_VIEW_EXTENT").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_VIEW_EXTENT").is_none_or(|v| v != "0"))
 }
 
 /// The host copy buffer view `view` reads, and the title range (address,
@@ -2008,10 +2008,10 @@ pub(crate) static KEPT_VIEWS: std::sync::atomic::AtomicU64 = std::sync::atomic::
 
 /// Whether a slot written with another view of the placed texture it
 /// shows keeps showing the old one until the new is made;
-/// `VICTORY_KEEP_VIEWS=0` makes it null at once, as before.
+/// `SINOXY_KEEP_VIEWS=0` makes it null at once, as before.
 fn keep_views() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_KEEP_VIEWS").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_KEEP_VIEWS").is_none_or(|v| v != "0"))
 }
 
 /// Whether both are shader views of one texture the title placed in

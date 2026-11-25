@@ -138,7 +138,7 @@ extern "system" fn adapter_description(_: This, out: *mut AdapterDescription) ->
         return E_INVALIDARG;
     }
     let mut name = [0; 128];
-    for (slot, unit) in name.iter_mut().zip("VIctory console GPU".encode_utf16()) {
+    for (slot, unit) in name.iter_mut().zip("Sinoxy console GPU".encode_utf16()) {
         *slot = unit;
     }
     // shortcut: memory sizes are the title's split (GPU-optimal, standard),
@@ -219,7 +219,7 @@ struct Mode {
 }
 const _: () = assert!(size_of::<Mode>() == 32);
 
-/// The size of the display the console reports: `VICTORY_DISPLAY_MODE=WxH`
+/// The size of the display the console reports: `SINOXY_DISPLAY_MODE=WxH`
 /// if set (as a console reports the television it is plugged into: a
 /// Series X on a 1080p set lists a 1080p mode), else 3840x2160.
 /// shortcut: not yet the host display's own size by default; make it so
@@ -227,7 +227,7 @@ const _: () = assert!(size_of::<Mode>() == 32);
 fn display_size() -> (u32, u32) {
     static SIZE: std::sync::OnceLock<(u32, u32)> = std::sync::OnceLock::new();
     *SIZE.get_or_init(|| {
-        let asked = std::env::var("VICTORY_DISPLAY_MODE").ok().and_then(|v| {
+        let asked = std::env::var("SINOXY_DISPLAY_MODE").ok().and_then(|v| {
             let (w, h) = v.trim().split_once(['x', 'X'])?;
             Some((w.trim().parse::<u32>().ok()?, h.trim().parse::<u32>().ok()?))
         });

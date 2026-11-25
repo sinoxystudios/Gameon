@@ -955,9 +955,9 @@ mod tests {
     static STEPS: AtomicU32 = AtomicU32::new(0);
 
     /// In a child process of the crash test, stops for good at the step
-    /// `VICTORY_SAVE_STOP` names and says so.
+    /// `SINOXY_SAVE_STOP` names and says so.
     pub(super) fn crash_point() {
-        let Ok(stop) = std::env::var("VICTORY_SAVE_STOP") else {
+        let Ok(stop) = std::env::var("SINOXY_SAVE_STOP") else {
             return;
         };
         if stop.parse() == Ok(STEPS.fetch_add(1, Ordering::SeqCst) + 1) {
@@ -1009,7 +1009,7 @@ mod tests {
     /// Run by the crash test in a child process; does nothing otherwise.
     #[test]
     fn crash_child() {
-        let (Ok(root), Ok(op)) = (std::env::var("VICTORY_SAVE_CHILD"), std::env::var("VICTORY_SAVE_OP")) else {
+        let (Ok(root), Ok(op)) = (std::env::var("SINOXY_SAVE_CHILD"), std::env::var("SINOXY_SAVE_OP")) else {
             return;
         };
         let root = PathBuf::from(root);
@@ -1037,9 +1037,9 @@ mod tests {
                 let mut child = std::process::Command::new(std::env::current_exe().unwrap())
                     .args(["--exact", "modules::xgamesave::tests::crash_child", "--nocapture"])
                     .args(["--test-threads=1"])
-                    .env("VICTORY_SAVE_CHILD", root)
-                    .env("VICTORY_SAVE_OP", op)
-                    .env("VICTORY_SAVE_STOP", stop.to_string())
+                    .env("SINOXY_SAVE_CHILD", root)
+                    .env("SINOXY_SAVE_OP", op)
+                    .env("SINOXY_SAVE_STOP", stop.to_string())
                     .stdout(std::process::Stdio::piped())
                     .spawn()
                     .unwrap();

@@ -2,7 +2,7 @@
 //! window to present on.
 //!
 //! shortcut: every submission is waited for, so CPU and GPU never overlap
-//! (unless `VICTORY_LATE_WAIT=1`, see [`late`]);
+//! (unless `SINOXY_LATE_WAIT=1`, see [`late`]);
 //! overlap them with per-submission fences once more than clears run.
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -49,7 +49,7 @@ pub(crate) struct Host {
     dsvs: ID3D12DescriptorHeap,
     dsv_size: u32,
     next_dsv: AtomicU32,
-    /// With `VICTORY_D3D12_DEBUG` set (diagnostics builds): the debug
+    /// With `SINOXY_D3D12_DEBUG` set (diagnostics builds): the debug
     /// layer's messages.
     messages: Option<ID3D12InfoQueue>,
     next_rtv: AtomicU32,
@@ -126,12 +126,12 @@ pub(crate) fn references(object: &impl Interface) -> u32 {
 /// Once a second, before a submission starts: lets go of what nothing
 /// names any more (copies of windows of title memory, staging buffers,
 /// host copies of textures the title fills).
-/// `VICTORY_SWEEP=0` keeps everything, as before.
+/// `SINOXY_SWEEP=0` keeps everything, as before.
 fn sweep() {
-    // The in-place probe and census, if asked for (`VICTORY_INPLACE_PROBE`).
+    // The in-place probe and census, if asked for (`SINOXY_INPLACE_PROBE`).
     crate::inplace::tick();
     static ON: OnceLock<bool> = OnceLock::new();
-    if !*ON.get_or_init(|| std::env::var_os("VICTORY_SWEEP").is_none_or(|v| v != "0")) {
+    if !*ON.get_or_init(|| std::env::var_os("SINOXY_SWEEP").is_none_or(|v| v != "0")) {
         return;
     }
     static LAST: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -194,14 +194,14 @@ static RETIREMENTS: [std::sync::atomic::AtomicU64; 2] = [const { std::sync::atom
 /// the pass that happens to notice first names only the view it was at:
 /// the three such losses of runs 72, 73 and 82 each came within 5 ms of a
 /// pipeline library call that no line of the log tied to them.
-/// `VICTORY_TRAIL=0`: nothing is kept and nothing is said.
+/// `SINOXY_TRAIL=0`: nothing is kept and nothing is said.
 static TRAIL: Mutex<std::collections::VecDeque<(u64, u32, String)>> = Mutex::new(std::collections::VecDeque::new());
 /// The entries kept.
 const TRAIL_MOST: usize = 96;
 
 fn trail_on() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_TRAIL").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_TRAIL").is_none_or(|v| v != "0"))
 }
 
 /// Microseconds since the first call.
@@ -453,7 +453,7 @@ pub fn on_failure(report: fn(&str) -> !) {
 }
 
 /// Ends the run on a host GPU failure: what failed, the removal reason and
-/// the debug layer's first error, if any (`VICTORY_D3D12_DEBUG=1` in a
+/// the debug layer's first error, if any (`SINOXY_D3D12_DEBUG=1` in a
 /// diagnostics build names the command).
 pub(crate) fn fail(what: std::fmt::Arguments) -> ! {
     let mut text = what.to_string();
@@ -466,7 +466,7 @@ pub(crate) fn fail(what: std::fmt::Arguments) -> ! {
         match host.log_messages() {
             Some(first) => text.push_str(&format!("; debug layer: {first}")),
             None if host.messages.is_none() => text.push_str(
-                "; a diagnostics build with VICTORY_D3D12_DEBUG=1 names the command",
+                "; a diagnostics build with SINOXY_D3D12_DEBUG=1 names the command",
             ),
             None => {}
         }
@@ -500,18 +500,18 @@ fn create() -> windows::core::Result<Host> {
     unsafe {
         // The debug layer only in builds with diagnostics.
         let debug =
-            cfg!(feature = "diagnostics") && std::env::var_os("VICTORY_D3D12_DEBUG").is_some();
+            cfg!(feature = "diagnostics") && std::env::var_os("SINOXY_D3D12_DEBUG").is_some();
         if debug {
             let mut layer: Option<ID3D12Debug> = None;
             match D3D12GetDebugInterface(&mut layer) {
                 Ok(()) => layer.iter().for_each(|l| l.EnableDebugLayer()),
                 Err(e) => tracing::warn!(error = %e, "no D3D12 debug layer"),
             }
-            // GPU-based validation (`VICTORY_D3D12_GBV`): out-of-range
+            // GPU-based validation (`SINOXY_D3D12_GBV`): out-of-range
             // descriptor heap indices and the like become messages naming
             // the command instead of page faults. Without state tracking
             // (directly indexed textures are not transitioned).
-            if std::env::var_os("VICTORY_D3D12_GBV").is_some()
+            if std::env::var_os("SINOXY_D3D12_GBV").is_some()
                 && let Some(l) = &layer
             {
                 if let Ok(d1) = l.cast::<ID3D12Debug1>() {
@@ -540,7 +540,7 @@ fn create() -> windows::core::Result<Host> {
         // Diagnostics: the software adapter, on which a shader's wild access
         // is an access violation in this process (a crash report with the
         // address and instruction) instead of a GPU fault and driver reset.
-        if cfg!(feature = "diagnostics") && std::env::var_os("VICTORY_D3D12_WARP").is_some() {
+        if cfg!(feature = "diagnostics") && std::env::var_os("SINOXY_D3D12_WARP").is_some() {
             let adapter = warp_adapter()?;
             D3D12CreateDevice(&adapter, D3D_FEATURE_LEVEL_12_0, &mut device)?;
             tracing::info!("host device on the software adapter (WARP)");
@@ -548,7 +548,7 @@ fn create() -> windows::core::Result<Host> {
             D3D12CreateDevice(None, D3D_FEATURE_LEVEL_12_0, &mut device)?;
         }
         let device = device.ok_or_else(windows::core::Error::empty)?;
-        // `VICTORY_D3D12_BACKGROUND=0`: the runtime's background work (the
+        // `SINOXY_D3D12_BACKGROUND=0`: the runtime's background work (the
         // driver compiling shaders again on the "D3D Background Thread"s,
         // for minutes after pipelines were made or loaded) is switched off.
         // An experiment: while those threads ran, the same shot took
@@ -556,7 +556,7 @@ fn create() -> windows::core::Result<Host> {
         // stopped (run 54, 08:32:01 to 08:32:06). Left as it is by default:
         // whether the card is slower with the shaders it then keeps is not
         // known.
-        if std::env::var_os("VICTORY_D3D12_BACKGROUND").is_some_and(|v| v == "0")
+        if std::env::var_os("SINOXY_D3D12_BACKGROUND").is_some_and(|v| v == "0")
             && let Ok(device6) = device.cast::<ID3D12Device6>()
         {
             let set = device6.SetBackgroundProcessingMode(
@@ -565,7 +565,7 @@ fn create() -> windows::core::Result<Host> {
                 None,
                 None,
             );
-            tracing::info!(ok = set.is_ok(), "the host's background shader work is switched off (VICTORY_D3D12_BACKGROUND=0)");
+            tracing::info!(ok = set.is_ok(), "the host's background shader work is switched off (SINOXY_D3D12_BACKGROUND=0)");
         }
         // the widest wave the GPU runs: 32 (NVIDIA) gets console wave64 compute programs whose
         // cross-lane code stays in 32-lane halves translated for waves of 32
@@ -746,7 +746,7 @@ pub(crate) struct HostList {
     /// data without marker texts), with the host GPU range a copy reads.
     #[cfg(feature = "diagnostics")]
     notes: Mutex<Vec<Note>>,
-    /// With `VICTORY_GPU_TIMING`: a GPU timestamp before each noted command
+    /// With `SINOXY_GPU_TIMING`: a GPU timestamp before each noted command
     /// and at the end, and where they are read back.
     #[cfg(feature = "diagnostics")]
     stamps: OnceLock<Option<(ID3D12QueryHeap, ID3D12Resource)>>,
@@ -760,10 +760,10 @@ type Prelude = (ID3D12CommandAllocator, ID3D12GraphicsCommandList);
 /// it; lists that name no texture never have one, and every host list was
 /// made with one all the same: twice the host objects per list, for the
 /// title's 630 lists and for every list made anew.
-/// `VICTORY_LAZY_PRELUDE=0`: made with the list, as before.
+/// `SINOXY_LAZY_PRELUDE=0`: made with the list, as before.
 fn lazy_prelude() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LAZY_PRELUDE").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LAZY_PRELUDE").is_none_or(|v| v != "0"))
 }
 
 /// Timestamps per list (diagnostics); commands past them are not timed.
@@ -1202,12 +1202,12 @@ fn record_twin_copy(
     }
 }
 
-/// Whether device-removed data is on (`VICTORY_D3D12_DRED`, diagnostics
+/// Whether device-removed data is on (`SINOXY_D3D12_DRED`, diagnostics
 /// builds).
 pub(crate) fn dred_on() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
     *ON.get_or_init(|| {
-        cfg!(feature = "diagnostics") && std::env::var_os("VICTORY_D3D12_DRED").is_some()
+        cfg!(feature = "diagnostics") && std::env::var_os("SINOXY_D3D12_DRED").is_some()
     })
 }
 
@@ -1217,12 +1217,12 @@ pub(crate) fn dred_on() -> bool {
 static MESH_GROUPS: [std::sync::atomic::AtomicU64; 2] = [const { std::sync::atomic::AtomicU64::new(0) }; 2];
 
 /// Whether each list of a submission runs and is timed on its own, slow
-/// ones logged with their commands (`VICTORY_GPU_TIMING`, diagnostics
-/// builds; the commands are noted with `VICTORY_D3D12_DRED` on).
+/// ones logged with their commands (`SINOXY_GPU_TIMING`, diagnostics
+/// builds; the commands are noted with `SINOXY_D3D12_DRED` on).
 #[cfg(feature = "diagnostics")]
 fn timing() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_GPU_TIMING").is_some())
+    *ON.get_or_init(|| std::env::var_os("SINOXY_GPU_TIMING").is_some())
 }
 
 /// Names a host object for the device-removed report, which names the
@@ -1312,10 +1312,10 @@ const SPARE_MOST: u64 = 128 << 20;
 /// host lists of held submissions, which live for one submission, each
 /// made theirs anew: some 57 upload buffers of 4 MiB made, zeroed and
 /// freed per frame of gameplay (run 60).
-/// `VICTORY_SCRATCH_POOL=0`: chunks of 4 MiB kept by their list, as before.
+/// `SINOXY_SCRATCH_POOL=0`: chunks of 4 MiB kept by their list, as before.
 fn scratch_pool() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_SCRATCH_POOL").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_SCRATCH_POOL").is_none_or(|v| v != "0"))
 }
 
 /// Things of some sizes that nothing holds now, kept for whoever next asks
@@ -1491,7 +1491,7 @@ void main(uint3 id : SV_DispatchThreadID) {
 
 /// Whether the pieces hashed again after ranges were sent up to a copy in
 /// the card's memory are hashed in runs of pieces that touch, each piece
-/// once (`VICTORY_CARD_REHASH_RUNS=1`; off by default), and not in a pass
+/// once (`SINOXY_CARD_REHASH_RUNS=1`; off by default), and not in a pass
 /// per range sent up.
 ///
 /// These passes are ours, they run on the card before every submission's
@@ -1503,7 +1503,7 @@ void main(uint3 id : SV_DispatchThreadID) {
 /// a fetch that finds nothing and loses no shader write.
 fn rehash_runs() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_CARD_REHASH_RUNS").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_CARD_REHASH_RUNS").is_some_and(|v| v == "1"))
 }
 
 /// Since the last frame-rate line, of our own passes over copies in the
@@ -1512,7 +1512,7 @@ fn rehash_runs() -> bool {
 static CARD_PASSES: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atomic::AtomicU64::new(0) }; 3];
 
 /// Whether what shaders wrote to copies in the card's memory is merged
-/// into title memory on several threads (`VICTORY_WIDE_MERGE=1`; off by
+/// into title memory on several threads (`SINOXY_WIDE_MERGE=1`; off by
 /// default). The pieces the card's compare found differing come down in
 /// one fetch and were then merged one after the other on the thread that
 /// settles: about 630 pieces and 40 MB a frame (run 104), each compared
@@ -1521,7 +1521,7 @@ static CARD_PASSES: [std::sync::atomic::AtomicU64; 3] = [const { std::sync::atom
 /// so eight threads take an eighth of them each.
 fn wide_merge() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WIDE_MERGE").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WIDE_MERGE").is_some_and(|v| v == "1"))
 }
 
 /// One declared range of a copy in the card's memory, in a submission.
@@ -1621,7 +1621,7 @@ impl Drop for Deferred {
 }
 
 /// Whether a queue's submissions go to the card without a wait for each
-/// (`VICTORY_LATE_WAIT=1`; off by default, and off in the timing run, which
+/// (`SINOXY_LATE_WAIT=1`; off by default, and off in the timing run, which
 /// waits for every list on its own).
 ///
 /// Every submission was prepared, sent, waited for and copied back before
@@ -1671,14 +1671,14 @@ pub(crate) fn late() -> bool {
     late_stage() > 0
 }
 
-/// `VICTORY_LATE_WAIT`: 0 (off), 1, or 2 ([`late_exact`]).
+/// `SINOXY_LATE_WAIT`: 0 (off), 1, or 2 ([`late_exact`]).
 fn late_stage() -> u8 {
     static STAGE: OnceLock<u8> = OnceLock::new();
     *STAGE.get_or_init(|| {
-        if std::env::var_os("VICTORY_GPU_TIMING").is_some() {
+        if std::env::var_os("SINOXY_GPU_TIMING").is_some() {
             return 0;
         }
-        match std::env::var("VICTORY_LATE_WAIT").as_deref() {
+        match std::env::var("SINOXY_LATE_WAIT").as_deref() {
             Ok("1") => 1,
             Ok("2") => 2,
             Ok("3") => 3,
@@ -1689,7 +1689,7 @@ fn late_stage() -> u8 {
     })
 }
 
-/// Stage 2 of [`late`] (`VICTORY_LATE_WAIT=2`): point 3 of its list is no
+/// Stage 2 of [`late`] (`SINOXY_LATE_WAIT=2`): point 3 of its list is no
 /// longer a point. Where the title wrote a page that lies in a range a
 /// flight's shaders may write, the bytes the title changed are found (the
 /// page as it is now against what the copy held when the flight was
@@ -1712,7 +1712,7 @@ fn late_exact() -> bool {
     late_stage() > 1
 }
 
-/// Stage 3 of [`late`] (`VICTORY_LATE_WAIT=3`: stage 2, and the present is
+/// Stage 3 of [`late`] (`SINOXY_LATE_WAIT=3`: stage 2, and the present is
 /// no longer a point where flights are settled). The copy to the back
 /// buffer is sent as a flight of its own (`Host::execute_own`, a list of
 /// its own for each present in the air) and the swap chain is told to
@@ -1730,8 +1730,8 @@ pub(crate) fn late_free_present() -> bool {
     late_stage() > 2
 }
 
-/// The relay's first stage (`VICTORY_RELAY=1`; off by default; it turns
-/// [`late`] on at stage 3 unless `VICTORY_LATE_WAIT` says another stage,
+/// The relay's first stage (`SINOXY_RELAY=1`; off by default; it turns
+/// [`late`] on at stage 3 unless `SINOXY_LATE_WAIT` says another stage,
 /// and is off with it, in the timing run and with kept snapshots).
 ///
 /// With [`late`] alone every settle does three things on the thread that
@@ -1767,7 +1767,7 @@ pub(crate) fn relay() -> bool {
     *ON.get_or_init(|| late_stage() > 0 && crate::shadow::relay())
 }
 
-/// The relay's second stage (`VICTORY_RELAY=2`): a submission that reads
+/// The relay's second stage (`SINOXY_RELAY=2`): a submission that reads
 /// title memory a flight's shaders may write (a title buffer copy, a fill
 /// of upload memory, a texture) waits only until the flights that declared
 /// that memory have landed, not for everything in the air; and at
@@ -1775,7 +1775,7 @@ pub(crate) fn relay() -> bool {
 /// both wait for everything.
 fn relay_exact() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| relay() && std::env::var_os("VICTORY_RELAY").is_some_and(|v| v == "2"))
+    *ON.get_or_init(|| relay() && std::env::var_os("SINOXY_RELAY").is_some_and(|v| v == "2"))
 }
 
 /// Told when something joins [`LINE`], for the thread that lands flights
@@ -1865,7 +1865,7 @@ mod relay_tests {
 }
 
 /// The most host lists in the air before the flights are settled
-/// (`VICTORY_LATE_WAIT_LISTS`, 128; 32 settled the flights three times a
+/// (`SINOXY_LATE_WAIT_LISTS`, 128; 32 settled the flights three times a
 /// frame in run 92 and 64 still 1.3-1.7 times in run 99, with 12,919 tables
 /// asked and none refused; watch "tables asked, N refused"): their dynamic
 /// descriptor slots, upload
@@ -1874,17 +1874,17 @@ mod relay_tests {
 fn late_most() -> usize {
     static MOST: OnceLock<usize> = OnceLock::new();
     *MOST.get_or_init(|| {
-        std::env::var("VICTORY_LATE_WAIT_LISTS").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(128).max(1)
+        std::env::var("SINOXY_LATE_WAIT_LISTS").ok().and_then(|v| v.trim().parse().ok()).unwrap_or(128).max(1)
     })
 }
 
 /// Whether a submission with bottom-of-pipe writes may fly
-/// (`VICTORY_LATE_WAIT_WRITES=0`: it is settled as soon as it is sent, so
+/// (`SINOXY_LATE_WAIT_WRITES=0`: it is settled as soon as it is sent, so
 /// the title is told at once, as before; for telling a title that polls
 /// such a value from one that does not).
 fn late_writes() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_LATE_WAIT_WRITES").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_LATE_WAIT_WRITES").is_none_or(|v| v != "0"))
 }
 
 /// Per host copy, the ranges a submission's shaders may write, as declared
@@ -2278,16 +2278,16 @@ fn late_threads() {
         tracing::info!(
             most = late_most(),
             writes = late_writes(),
-            "submissions are sent to the card without a wait for each (VICTORY_LATE_WAIT=1)"
+            "submissions are sent to the card without a wait for each (SINOXY_LATE_WAIT=1)"
         );
         if relay() {
             // Without it nothing would ever land.
             if let Err(e) = std::thread::Builder::new().name("victory-relay".into()).spawn(relay_worker) {
-                fail(format_args!("no thread to land submissions sent ahead (VICTORY_RELAY=1): {e}"));
+                fail(format_args!("no thread to land submissions sent ahead (SINOXY_RELAY=1): {e}"));
             }
             tracing::info!(
                 exact = relay_exact(),
-                "what shaders wrote is copied back by a thread of its own, beside the submitting thread (VICTORY_RELAY=1)"
+                "what shaders wrote is copied back by a thread of its own, beside the submitting thread (SINOXY_RELAY=1)"
             );
         }
     });
@@ -2343,7 +2343,7 @@ fn relay_worker() {
     };
     // SAFETY: a plain event of our own.
     let Ok(event) = (unsafe { CreateEventW(None, false, false, None) }) else {
-        fail(format_args!("no event for the thread that lands submissions sent ahead (VICTORY_RELAY=1)"));
+        fail(format_args!("no event for the thread that lands submissions sent ahead (SINOXY_RELAY=1)"));
     };
     let mut fetch: Option<RelayFetch> = None;
     loop {
@@ -2454,7 +2454,7 @@ fn late_line(frames: f64) {
          settled for: a synchronous submission or present {:.1}, the card had run them {:.1}, a wait for a memory value {:.1}, \
          title memory changed under shader writes {:.1}, title memory read {:.1} (by a buffer copy {:.1}, a fill of upload memory {:.1}, \
          a texture {:.1}), a step of ours {:.1}, {} lists in the air {:.1}, \
-         bottom-of-pipe writes (VICTORY_LATE_WAIT_WRITES=0) {:.1}, a blocking fence wait {:.1}; \
+         bottom-of-pipe writes (SINOXY_LATE_WAIT_WRITES=0) {:.1}, a blocking fence wait {:.1}; \
          {:.1} waits for memory values met by a flight's bottom-of-pipe write, {:.1} fence signals set behind flights",
         s[0],
         s[1],
@@ -2496,7 +2496,7 @@ fn late_line(frames: f64) {
     if relay() {
         let r: Vec<f64> = RELAY_STATS.iter().map(|r| r.swap(0, Ordering::Relaxed) as f64 / frames).collect();
         tracing::info!(
-            "the relay per frame (VICTORY_RELAY=1): {:.1} flights landed in {:.1} landings by the thread that copies back, \
+            "the relay per frame (SINOXY_RELAY=1): {:.1} flights landed in {:.1} landings by the thread that copies back, \
              beside the submitting thread; that thread waited {:.1} ms for the card with nothing to land and {:.1} ms for \
              fetches of card copies' pieces, and was {:.1} ms landing in all (the frame line's \"copying back\" is its time; \
              \"settles\" above are waits of other threads for it)",
@@ -2510,7 +2510,7 @@ fn late_line(frames: f64) {
     if late_exact() {
         let [pages, runs, bytes] = crate::shadow::merged_stats().map(|n| n as f64 / frames);
         tracing::info!(
-            "title bytes put in under flights' shader writes per frame (VICTORY_LATE_WAIT=2): {pages:.0} pages looked at, \
+            "title bytes put in under flights' shader writes per frame (SINOXY_LATE_WAIT=2): {pages:.0} pages looked at, \
              {runs:.0} changed runs, {:.2} MB",
             bytes / (1 << 20) as f64
         );
@@ -2570,7 +2570,7 @@ mod late_tests {
 }
 
 /// Whether a title buffer copy that continues the one recorded before it
-/// in its list becomes one step with it (`VICTORY_JOIN_COPIES=1`; off by
+/// in its list becomes one step with it (`SINOXY_JOIN_COPIES=1`; off by
 /// default).
 ///
 /// Each copy is done at submission through the kernel, which reports a
@@ -2589,7 +2589,7 @@ mod late_tests {
 /// only the copy that held it did.
 fn join_copies() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_JOIN_COPIES").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_JOIN_COPIES").is_some_and(|v| v == "1"))
 }
 
 /// Since the last frame-rate line: title buffer copies recorded, and those
@@ -3287,14 +3287,14 @@ impl Host {
             *fetch = self.make_relay_fetch();
         }
         let Some(f) = fetch.as_mut() else {
-            fail(format_args!("no list, fence or event to fetch what shaders wrote to the card's memory (VICTORY_RELAY=1)"));
+            fail(format_args!("no list, fence or event to fetch what shaders wrote to the card's memory (SINOXY_RELAY=1)"));
         };
         if f.buffer.as_ref().is_none_or(|b| b.2 < total) {
             let size = total.next_multiple_of(16 << 20);
             f.buffer = self.shared_buffer(size).map(|(buffer, data)| (buffer, data as usize, size));
         }
         let Some((buffer, data, _)) = f.buffer.clone() else {
-            fail(format_args!("no memory to fetch what shaders wrote to the card's memory ({total} bytes, VICTORY_RELAY=1)"));
+            fail(format_args!("no memory to fetch what shaders wrote to the card's memory ({total} bytes, SINOXY_RELAY=1)"));
         };
         f.sent += 1;
         let ((allocator, list), fence, event, sent) = (f.list.clone(), f.fence.clone(), f.event, f.sent);
@@ -3326,7 +3326,7 @@ impl Host {
         };
         let after = match ran {
             Ok(after) => after,
-            Err(e) => fail(format_args!("what shaders wrote to the card's memory could not be fetched ({e}, VICTORY_RELAY=1)")),
+            Err(e) => fail(format_args!("what shaders wrote to the card's memory could not be fetched ({e}, SINOXY_RELAY=1)")),
         };
         let us = waiting.elapsed().as_micros() as u64;
         RELAY_STATS[3].fetch_add(us, Ordering::Relaxed);
@@ -3373,7 +3373,7 @@ impl Host {
                 if unsafe { self.device.GetDeviceRemovedReason() }.is_err() {
                     let runs: Vec<&HostList> = flights.iter().flat_map(|f| f.order.iter().map(|&i| f.lists[i].host())).collect();
                     fail(format_args!(
-                        "host GPU device removed after {} submissions sent ahead (VICTORY_RELAY=1) of {} lists{}{}",
+                        "host GPU device removed after {} submissions sent ahead (SINOXY_RELAY=1) of {} lists{}{}",
                         flights.len(),
                         runs.len(),
                         self.removal_data(&runs),
@@ -3777,7 +3777,7 @@ impl Host {
                         .flat_map(|f| f.order.iter().map(|&i| f.lists[i].host()))
                         .collect();
                     fail(format_args!(
-                        "host GPU device removed after {flights} submissions sent ahead (VICTORY_LATE_WAIT=1) of {} lists{}{}",
+                        "host GPU device removed after {flights} submissions sent ahead (SINOXY_LATE_WAIT=1) of {} lists{}{}",
                         runs.len(),
                         self.removal_data(&runs),
                         last_notes(&runs)
@@ -3913,7 +3913,7 @@ impl Host {
         // frame line (run 92 showed them twice, "preparing" 250 ms for 135).
         let mut settled = std::time::Duration::ZERO;
         // One write-watch asking for everything the submission refreshes
-        // (`VICTORY_ASK_ONCE`): per copy, the span of its refreshed ranges.
+        // (`SINOXY_ASK_ONCE`): per copy, the span of its refreshed ranges.
         if crate::watch::once() {
             let mut spans: std::collections::HashMap<usize, (usize, usize)> = std::collections::HashMap::new();
             for list in runs {
@@ -4005,7 +4005,7 @@ impl Host {
             working(was_working);
             return Some((submitted, sent));
         }
-        // Diagnostics: each list on its own, timed (`VICTORY_GPU_TIMING`).
+        // Diagnostics: each list on its own, timed (`SINOXY_GPU_TIMING`).
         #[cfg(feature = "diagnostics")]
         let groups: Vec<&[Option<ID3D12CommandList>]> = if timing() {
             firsts
@@ -4150,7 +4150,7 @@ impl Host {
         None
     }
 
-    /// With `VICTORY_D3D12_DRED`: the faulting address and the allocations
+    /// With `SINOXY_D3D12_DRED`: the faulting address and the allocations
     /// it lies in (by the names we give them) or the title memory copy just
     /// below it; for each list that did not finish, the command it stopped
     /// at and what the draws and dispatches in flight there run (or, in
@@ -5156,7 +5156,7 @@ impl HostList {
 }
 
 /// Whether a submission's refreshes of host copies run on several threads,
-/// a copy to a thread (`VICTORY_WIDE_REFRESH=1`; off by default).
+/// a copy to a thread (`SINOXY_WIDE_REFRESH=1`; off by default).
 ///
 /// A submission brings some sixty copies up to date, one after the other
 /// on the submitting thread: for each, the pages the title wrote are asked
@@ -5169,7 +5169,7 @@ impl HostList {
 /// they are for the title's threads.
 fn wide_refresh() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_WIDE_REFRESH").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WIDE_REFRESH").is_some_and(|v| v == "1"))
 }
 
 /// A submission's refreshes not done yet, merged per buffer copy into the
@@ -5316,10 +5316,10 @@ pub(crate) fn copy_mapped(dst: *mut u8, src: *const u8, len: usize, title_dst: b
     // milliseconds a copy, and it was a seventh of the submitting thread's
     // time in gameplay (run 60: 71 of 500 looks). The kernel's copy below
     // says the same when it fails, so the question is only asked then.
-    // `VICTORY_COPY_ASK=1` asks first, as before.
+    // `SINOXY_COPY_ASK=1` asks first, as before.
     static ASK: OnceLock<bool> = OnceLock::new();
     let ask_first = title_dst
-        && *ASK.get_or_init(|| std::env::var_os("VICTORY_COPY_ASK").is_some_and(|v| v == "1"));
+        && *ASK.get_or_init(|| std::env::var_os("SINOXY_COPY_ASK").is_some_and(|v| v == "1"));
     if ask_first && !crate::texture::committed(dst, len) {
         return;
     }
@@ -5442,10 +5442,10 @@ unsafe extern "system" {
 /// what the pages are (as `VirtualQuery` does: about 2 ms a call in the
 /// title's big pools, see [`copy_mapped`]): putting back what shaders wrote
 /// cost 1.2-1.9 s a frame for 430-800 pieces, 2 ms each whatever their size
-/// (run 24). On by default; `VICTORY_DIRECT_WRITES=0` writes as before.
+/// (run 24). On by default; `SINOXY_DIRECT_WRITES=0` writes as before.
 fn direct_writes() -> bool {
     static ON: OnceLock<bool> = OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("VICTORY_DIRECT_WRITES").is_none_or(|v| v != "0"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_DIRECT_WRITES").is_none_or(|v| v != "0"))
 }
 
 /// Copies host memory into title memory after a submission (what shaders
@@ -5686,7 +5686,7 @@ impl Meter {
             if passes + compares > 0.0 {
                 tracing::info!(
                     "our passes over copies in the card's memory per frame: {passes:.0} hash passes over {pieces:.0} pieces after \
-                     ranges were sent up (VICTORY_CARD_REHASH_RUNS=1 joins them: now {}), {compares:.0} compare passes",
+                     ranges were sent up (SINOXY_CARD_REHASH_RUNS=1 joins them: now {}), {compares:.0} compare passes",
                     if rehash_runs() { "on" } else { "off" }
                 );
             }
@@ -5704,7 +5704,7 @@ impl Meter {
             let [through, left] = [0, 1].map(|i| crate::texture::UNLOCKED[i].swap(0, Ordering::Relaxed) as f64 / frames);
             if through + left > 0.0 {
                 tracing::info!(
-                    "texture refreshes that did not wait for title memory to hold still, per frame (VICTORY_TEXTURE_NO_WAIT=1): \
+                    "texture refreshes that did not wait for title memory to hold still, per frame (SINOXY_TEXTURE_NO_WAIT=1): \
                      {through:.1} read through the kernel, {left:.1} left for the next refresh (a page was not there)"
                 );
             }
@@ -5714,7 +5714,7 @@ impl Meter {
             if copies > 0.0 {
                 tracing::info!(
                     "title buffer copies recorded per frame: {copies:.0}, of them {joined:.0} continue the one before \
-                     (VICTORY_JOIN_COPIES=1 makes those one copy with it: now {})",
+                     (SINOXY_JOIN_COPIES=1 makes those one copy with it: now {})",
                     if join_copies() { "on" } else { "off" }
                 );
             }
@@ -5837,7 +5837,7 @@ impl Meter {
             self.caption = Some(buffer);
         }
         let Some(caption) = &self.caption else { return };
-        let text = format!(" | VIctory {fps:.0} fps {ms:.1} ms/frame {draws:.0} draws/frame");
+        let text = format!(" | Sinoxy {fps:.0} fps {ms:.1} ms/frame {draws:.0} draws/frame");
         let mut text: Vec<u16> = caption.iter().copied().chain(text.encode_utf16()).collect();
         text.push(0);
         // Setting the text waits for the window's thread (a title thread,
@@ -6196,7 +6196,7 @@ impl Host {
 
 /// For adapters without device-removed data (the software one): the last
 /// commands each list of the failed submission noted (diagnostics, with
-/// `VICTORY_D3D12_DRED`).
+/// `SINOXY_D3D12_DRED`).
 fn last_notes(runs: &[&HostList]) -> String {
     #[cfg(feature = "diagnostics")]
     {
@@ -6314,7 +6314,7 @@ extern "system" fn window_proc(
 }
 
 fn make_window(width: u32, height: u32) -> windows::core::Result<HWND> {
-    const CLASS: PCWSTR = w!("VIctory");
+    const CLASS: PCWSTR = w!("Sinoxy");
     // SAFETY: registers our class once and creates a window of it.
     unsafe {
         let instance = GetModuleHandleW(None)?;
@@ -6337,7 +6337,7 @@ fn make_window(width: u32, height: u32) -> windows::core::Result<HWND> {
         CreateWindowExW(
             WINDOW_EX_STYLE(0),
             CLASS,
-            w!("VIctory"),
+            w!("Sinoxy"),
             WS_OVERLAPPEDWINDOW | WS_VISIBLE,
             CW_USEDEFAULT,
             CW_USEDEFAULT,

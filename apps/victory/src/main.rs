@@ -1,4 +1,4 @@
-//! `victory`: the command-line front end.
+//! `sinoxy`: the command-line front end.
 //!
 //! Every command reads the user's own files and writes only to stdout or to
 //! the user's cache directory (outside the repository).
@@ -16,7 +16,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Parser)]
 #[command(
-    name = "victory",
+    name = "sinoxy",
     version,
     about = "Run an Xbox Series title natively on Windows"
 )]
@@ -71,7 +71,7 @@ enum Command {
     /// translator and report what it cannot handle yet.
     Translate {
         paths: Vec<PathBuf>,
-        /// Check emitted DXIL with dxil.dll's validator (`VICTORY_DXIL`,
+        /// Check emitted DXIL with dxil.dll's validator (`SINOXY_DXIL`,
         /// else the newest Windows SDK's).
         #[arg(long)]
         validate: bool,
@@ -123,7 +123,7 @@ enum Console {
 
 fn main() -> Result<()> {
     victory_core::logging::init("info");
-    // The audio recorder `run` starts for `VICTORY_AUDIO_CAPTURE`.
+    // The audio recorder `run` starts for `SINOXY_AUDIO_CAPTURE`.
     #[cfg(all(windows, feature = "diagnostics"))]
     if victory_hle::modules::audio::capture::child() {
         return Ok(());
@@ -153,12 +153,12 @@ fn main() -> Result<()> {
             list,
             jobs,
         } => {
-            // `VICTORY_VIEW_LIMIT=<null slot>`: translate as on a host whose view heap is capped
-            if let Some(n) = std::env::var("VICTORY_VIEW_LIMIT").ok().and_then(|v| v.parse().ok()) {
+            // `SINOXY_VIEW_LIMIT=<null slot>`: translate as on a host whose view heap is capped
+            if let Some(n) = std::env::var("SINOXY_VIEW_LIMIT").ok().and_then(|v| v.parse().ok()) {
                 victory_shader::emit::set_view_heap_limit(n);
             }
-            // `VICTORY_HOST_WAVE=32`: translate as for a GPU whose waves are at most 32 lanes
-            if let Some(n) = std::env::var("VICTORY_HOST_WAVE").ok().and_then(|v| v.parse().ok()) {
+            // `SINOXY_HOST_WAVE=32`: translate as for a GPU whose waves are at most 32 lanes
+            if let Some(n) = std::env::var("SINOXY_HOST_WAVE").ok().and_then(|v| v.parse().ok()) {
                 victory_shader::emit::set_host_max_wave(n);
             }
             translate::run(paths, validate, pipelines, list, jobs)
@@ -216,7 +216,7 @@ pub(crate) fn default_paths(paths: Vec<PathBuf>) -> Result<Vec<PathBuf>> {
     let all: Vec<PathBuf> = cfg.game_dir.into_iter().chain(cfg.test_titles).collect();
     anyhow::ensure!(
         !all.is_empty(),
-        "no paths given and none configured (see victory.example.toml)"
+        "no paths given and none configured (see sinoxy.example.toml)"
     );
     Ok(all)
 }

@@ -1,0 +1,19 @@
+# Copy to `sinoxy.toml` (git-ignored) and point it at YOUR files.
+# Every path must be OUTSIDE the repository; the tools refuse otherwise.
+# Environment variables (shown below) take precedence over this file.
+# SINOXY_CONFIG selects a different config file.
+
+[paths]
+# Your own dump of the title.     env: SINOXY_GAME_DIR
+game_dir = 'D:\sinoxy-data\game'
+
+# Derived data. Default: %LOCALAPPDATA%\sinoxy\cache.   env: SINOXY_CACHE_DIR
+# cache_dir = 'D:\sinoxy-data\cache'
+
+# What titles save (persistent local storage), kept apart from the cache.
+# Default: %LOCALAPPDATA%\sinoxy\data.   env: SINOXY_DATA_DIR
+# data_dir = 'D:\sinoxy-data\data'
+
+# Other Xbox Series titles used to test platform-level code.
+# env: SINOXY_TEST_TITLES (separated by ';')
+test_titles = []

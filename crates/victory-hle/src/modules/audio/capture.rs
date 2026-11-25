@@ -1,4 +1,4 @@
-//! Debugging aid: `VICTORY_AUDIO_CAPTURE=<file.wav>` records what the title
+//! Debugging aid: `SINOXY_AUDIO_CAPTURE=<file.wav>` records what the title
 //! plays, 48 kHz stereo 16-bit, through process loopback: our own process
 //! tree only, never the rest of the host's mix. Stretches where nothing was
 //! played are written as silence, so the file keeps real time.
@@ -46,9 +46,9 @@ impl IActivateAudioInterfaceCompletionHandler_Impl for Activated_Impl {
 }
 
 /// Names the process to record, in the recorder's environment.
-const TARGET: &str = "VICTORY_AUDIO_CAPTURE_OF";
+const TARGET: &str = "SINOXY_AUDIO_CAPTURE_OF";
 
-/// Starts the recorder if `VICTORY_AUDIO_CAPTURE` names a file. With this
+/// Starts the recorder if `SINOXY_AUDIO_CAPTURE` names a file. With this
 /// module's debug log, also logs once a second what a `Sleep(1)` takes in
 /// this process (the title's millisecond waits get the same).
 pub fn start() {
@@ -66,7 +66,7 @@ pub fn start() {
                 }
             });
     }
-    if std::env::var_os("VICTORY_AUDIO_CAPTURE").is_some()
+    if std::env::var_os("SINOXY_AUDIO_CAPTURE").is_some()
         && let Err(e) = std::env::current_exe().and_then(|exe| {
             std::process::Command::new(exe)
                 .env(TARGET, std::process::id().to_string())
@@ -82,7 +82,7 @@ pub fn start() {
 pub fn child() -> bool {
     let (Some(pid), Some(path)) = (
         std::env::var(TARGET).ok().and_then(|p| p.parse().ok()),
-        std::env::var_os("VICTORY_AUDIO_CAPTURE"),
+        std::env::var_os("SINOXY_AUDIO_CAPTURE"),
     ) else {
         return false;
     };

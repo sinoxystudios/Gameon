@@ -124,7 +124,7 @@ pub const DEFAULT_LOOP_LIMIT: u32 = lower::LOOP_LIMIT;
 /// The iteration count after which a translated loop is left, per lane and
 /// per entry into the loop: [`DEFAULT_LOOP_LIMIT`].
 ///
-/// With the `diagnostics` feature, `VICTORY_SHADER_LOOP_LIMIT` (decimal or
+/// With the `diagnostics` feature, `SINOXY_SHADER_LOOP_LIMIT` (decimal or
 /// `0x` hex, at least 1) sets it instead. A loop that hits the limit in
 /// every lane of a full-screen pass still runs for seconds (2^20 times a
 /// 4K screen is about 10^13 iterations); a much lower limit shows whether
@@ -134,7 +134,7 @@ pub fn loop_limit() -> u32 {
     static LIMIT: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
     *LIMIT.get_or_init(|| {
         if cfg!(feature = "diagnostics") {
-            parse_loop_limit(std::env::var("VICTORY_SHADER_LOOP_LIMIT").ok().as_deref())
+            parse_loop_limit(std::env::var("SINOXY_SHADER_LOOP_LIMIT").ok().as_deref())
         } else {
             lower::LOOP_LIMIT
         }
@@ -147,7 +147,7 @@ pub fn loop_limit() -> u32 {
 /// reaches is undefined on the host, and NVIDIA's wait is for every
 /// thread: the group stands until Windows resets the card. (The console's
 /// barrier is the wave's, whatever lanes are live, and a wave that ended
-/// is not waited for.) `VICTORY_GROUP_SYNC`:
+/// is not waited for.) `SINOXY_GROUP_SYNC`:
 /// - unset or `2`: every barrier waits, as before.
 /// - `1`: the title's `s_barrier` waits only in a block every lane runs,
 ///   in a program no lane can be cut out of at the iteration limit.
@@ -161,7 +161,7 @@ pub fn loop_limit() -> u32 {
 /// does).
 pub fn group_sync() -> u8 {
     static MODE: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
-    *MODE.get_or_init(|| match std::env::var("VICTORY_GROUP_SYNC").ok().as_deref().map(str::trim) {
+    *MODE.get_or_init(|| match std::env::var("SINOXY_GROUP_SYNC").ok().as_deref().map(str::trim) {
         Some("0") => 0,
         Some("1") => 1,
         _ => 2,
@@ -172,7 +172,7 @@ pub fn group_sync() -> u8 {
 /// written (`bitcode::opt`): a set of that module's pass bits. Every pass
 /// is exact, so the switch is for telling a translator fault from a
 /// clean-up fault, and for measuring what the clean-up is worth.
-/// `VICTORY_SHADER_OPT`:
+/// `SINOXY_SHADER_OPT`:
 /// - unset: every pass.
 /// - `0`: none (the module as the lowering made it).
 /// - a number (decimal or `0x` hex): those passes; 1 dead code, 2 constants
@@ -185,10 +185,10 @@ pub fn group_sync() -> u8 {
 /// does).
 pub fn shader_opt() -> u32 {
     static PASSES: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
-    *PASSES.get_or_init(|| parse_shader_opt(std::env::var("VICTORY_SHADER_OPT").ok().as_deref()))
+    *PASSES.get_or_init(|| parse_shader_opt(std::env::var("SINOXY_SHADER_OPT").ok().as_deref()))
 }
 
-/// `VICTORY_SHADER_OPT`'s value; every pass when it is unset or
+/// `SINOXY_SHADER_OPT`'s value; every pass when it is unset or
 /// unreadable. Pure, for testing.
 fn parse_shader_opt(value: Option<&str>) -> u32 {
     let parsed = value
@@ -200,7 +200,7 @@ fn parse_shader_opt(value: Option<&str>) -> u32 {
     parsed.map_or(bitcode::opt::ALL, |n| n & bitcode::opt::ALL)
 }
 
-/// `VICTORY_SHADER_LOOP_LIMIT`'s value; the default when it is unset,
+/// `SINOXY_SHADER_LOOP_LIMIT`'s value; the default when it is unset,
 /// unreadable or 0. Pure, for testing.
 fn parse_loop_limit(value: Option<&str>) -> u32 {
     let parsed = value
@@ -323,7 +323,7 @@ pub fn emit(
     // on its own)
     let exact_only = matches!(&original, Err(ShaderError::Unsupported { what, .. }) if *what == lower::MASK_ELSEWHERE);
     if stuck && native.stage == HwStage::Cs && native.wave64 && lower::host_max_wave() == 32 {
-        let why = std::env::var_os("VICTORY_WAVE_WHY").is_some();
+        let why = std::env::var_os("SINOXY_WAVE_WHY").is_some();
         let report = |what: &str, r: &Result<(HostShader, Option<u32>), ShaderError>| {
             if why {
                 match r {
@@ -335,13 +335,13 @@ pub fn emit(
         let done = |r: &Result<(HostShader, Option<u32>), ShaderError>| matches!(r, Ok((_, wave)) if *wave != Some(64));
         // Each host wave as a wave of its own (`lower::with_local_waves`),
         // for programs still stopped where not every lane runs.
-        let local_on = std::env::var_os("VICTORY_WAVE_LOCAL").is_none_or(|v| v != "0");
+        let local_on = std::env::var_os("SINOXY_WAVE_LOCAL").is_none_or(|v| v != "0");
         // Where the wave operations are the allocation idiom
         // ([`lower::wave_local`]) that is exact. Other programs are taken
         // the same way last of all, each half-wave giving its own results
         // (approximate: a tile-wide result becomes two half-tile ones);
-        // `VICTORY_WAVE_LOCAL=idiom` refuses those instead.
-        let strict = std::env::var_os("VICTORY_WAVE_LOCAL").is_some_and(|v| v == "idiom");
+        // `SINOXY_WAVE_LOCAL=idiom` refuses those instead.
+        let strict = std::env::var_os("SINOXY_WAVE_LOCAL").is_some_and(|v| v == "idiom");
         let idiom = |p: &ir::Program, st: &structure::Structured| match lower::wave_local(p, st) {
             Ok(()) => true,
             Err((offset, what)) => {
@@ -374,12 +374,12 @@ pub fn emit(
                 }
             }
         }
-        // Off unless asked for (`VICTORY_WAVE_WIDE=1`), for a console wave run as two host
+        // Off unless asked for (`SINOXY_WAVE_WIDE=1`), for a console wave run as two host
         // waves: this form puts group barriers inside branches and loops, and runs 121-124
         // lost the card in a submission of two programs that had just moved to it
         // (`ptfx_CS_lightAtlas_Sprite` and `_Trail`). The 32-lane programs' form below, which
         // has no barrier, stays on.
-        let wide_on = std::env::var_os("VICTORY_WAVE_WIDE").is_some_and(|v| v == "1");
+        let wide_on = std::env::var_os("SINOXY_WAVE_WIDE").is_some_and(|v| v == "1");
         // exact first: each host wave on its own where that is exact (the idiom, every
         // form; no barriers), then the other exact forms; then approximate
         for exact in [true, false] {
@@ -388,8 +388,8 @@ pub fn emit(
                 // Every skip left out that the code after it cannot see
                 // ([`ir::without_skips`], `deep`): most of the body is then code every
                 // lane runs, where the two host waves can exchange.
-                // (`VICTORY_WAVE_DEEP_SKIPS=0` and `VICTORY_WAVE_WIDE=0` turn the two off.)
-                let deep_on = std::env::var_os("VICTORY_WAVE_DEEP_SKIPS").is_none_or(|v| v != "0");
+                // (`SINOXY_WAVE_DEEP_SKIPS=0` and `SINOXY_WAVE_WIDE=0` turn the two off.)
+                let deep_on = std::env::var_os("SINOXY_WAVE_DEEP_SKIPS").is_none_or(|v| v != "0");
                 let deep = if deep_on { form(ir::without_skips(p, true)) } else { None };
                 if let Some((p, st, io, res)) = &deep {
                     let again = emit_program(c, native, p, st, io, res);
@@ -469,9 +469,9 @@ pub fn emit(
         Err(ShaderError::Unsupported { what, .. })
             if native.stage == HwStage::Cs
                 && what == lower::LANE_MASK
-                && std::env::var_os("VICTORY_WAVE_WIDE").is_none_or(|v| v != "0") =>
+                && std::env::var_os("SINOXY_WAVE_WIDE").is_none_or(|v| v != "0") =>
         {
-            let again = widen(c, native, p, std::env::var_os("VICTORY_WAVE_WHY").is_some());
+            let again = widen(c, native, p, std::env::var_os("SINOXY_WAVE_WHY").is_some());
             match again {
                 Ok(_) => again,
                 Err(_) => emit_program(c, native, p, st, io, res),
@@ -1047,8 +1047,8 @@ mod tests {
                 root_indexed_views: Vec::new(),
             })
         };
-        let ps = file("VICTORY_REF_PS", crate::HwStage::Ps).unwrap_or(ps);
-        let vs = file("VICTORY_REF_VS", crate::HwStage::Vs)
+        let ps = file("SINOXY_REF_PS", crate::HwStage::Ps).unwrap_or(ps);
+        let vs = file("SINOXY_REF_VS", crate::HwStage::Vs)
             .unwrap_or_else(|| super::host::stub_vs(&ps).unwrap());
         if let Ok(mut v) = super::validator::Validator::load(
             super::validator::Validator::default_path().as_deref(),

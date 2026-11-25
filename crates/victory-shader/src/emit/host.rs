@@ -63,14 +63,14 @@ fn err(e: windows::core::Error) -> String {
 }
 
 impl Host {
-    /// The default adapter, or WARP with `warp` (or `VICTORY_WARP=1`).
+    /// The default adapter, or WARP with `warp` (or `SINOXY_WARP=1`).
     pub fn new(warp: bool) -> Result<Self, String> {
-        let warp = warp || std::env::var("VICTORY_WARP").is_ok_and(|v| v == "1");
+        let warp = warp || std::env::var("SINOXY_WARP").is_ok_and(|v| v == "1");
         // SAFETY: plain D3D12/DXGI calls with valid out pointers.
         unsafe {
-            // `VICTORY_D3D12_DEBUG`: the debug layer, whose messages a
+            // `SINOXY_D3D12_DEBUG`: the debug layer, whose messages a
             // refused pipeline's error then carries.
-            if std::env::var_os("VICTORY_D3D12_DEBUG").is_some() {
+            if std::env::var_os("SINOXY_D3D12_DEBUG").is_some() {
                 let mut debug: Option<ID3D12Debug> = None;
                 if D3D12GetDebugInterface(&mut debug).is_ok()
                     && let Some(debug) = debug
@@ -264,7 +264,7 @@ impl Host {
     }
 
     /// The error with the debug layer's messages since the last call, if
-    /// the layer is on (`VICTORY_D3D12_DEBUG`).
+    /// the layer is on (`SINOXY_D3D12_DEBUG`).
     fn explained(&self, e: windows::core::Error) -> String {
         let mut text = err(e);
         let Ok(queue) = self.device.cast::<ID3D12InfoQueue>() else {

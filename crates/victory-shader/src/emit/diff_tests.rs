@@ -2,9 +2,9 @@
 //! translated, against the same HLSL compiled for PC, both drawn (or
 //! dispatched) on the host GPU with the same inputs.
 //!
-//! Needs `VICTORY_CONSOLE_DXC` (the console SDK's `dxc.exe`) and a PC
-//! `dxc.exe` (`VICTORY_PC_DXC`, else the newest Windows SDK's); skipped
-//! without them. Set `VICTORY_WARP=1` to draw on WARP.
+//! Needs `SINOXY_CONSOLE_DXC` (the console SDK's `dxc.exe`) and a PC
+//! `dxc.exe` (`SINOXY_PC_DXC`, else the newest Windows SDK's); skipped
+//! without them. Set `SINOXY_WARP=1` to draw on WARP.
 
 use std::path::{Path, PathBuf};
 
@@ -432,7 +432,7 @@ const CS_CASES: &[(&str, &str)] = &[
     // A loop whose count comes from a view that reads zeros (as a null or
     // not yet mirrored one does) runs four billion times on the console;
     // the translation leaves it after `LOOP_LIMIT` iterations. Run on WARP
-    // only (`VICTORY_WARP=1`), ours only: without the limit it would hang
+    // only (`SINOXY_WARP=1`), ours only: without the limit it would hang
     // the GPU.
     (
         "terminates on zero data",
@@ -652,8 +652,8 @@ const MS_CASES: &[(&str, u32, &str)] = &[
 ];
 
 fn tools() -> Option<(PathBuf, PathBuf)> {
-    let console = PathBuf::from(std::env::var_os("VICTORY_CONSOLE_DXC")?);
-    let pc = match std::env::var_os("VICTORY_PC_DXC") {
+    let console = PathBuf::from(std::env::var_os("SINOXY_CONSOLE_DXC")?);
+    let pc = match std::env::var_os("SINOXY_PC_DXC") {
         Some(p) => PathBuf::from(p),
         None => super::validator::Validator::default_path()?.with_file_name("dxc.exe"),
     };
@@ -679,7 +679,7 @@ fn compile(dxc: &Path, dir: &Path, src: &str, entry: &str, profile: &str) -> Vec
         // `CONSOLE` marks the console compile (cases spell console-only
         // intrinsics there).
         .args(
-            std::env::var_os("VICTORY_CONSOLE_DXC")
+            std::env::var_os("SINOXY_CONSOLE_DXC")
                 .is_some_and(|c| Path::new(&c) == dxc)
                 .then_some("-DCONSOLE"),
         )
@@ -772,7 +772,7 @@ fn translated_shaders_draw_as_pc_ones() {
         mesh_groups: 0,
     };
     let mut failures = Vec::new();
-    let only = std::env::var("VICTORY_DIFF_ONLY").ok();
+    let only = std::env::var("SINOXY_DIFF_ONLY").ok();
     for (name, src) in CASES
         .iter()
         .filter(|c| only.as_ref().is_none_or(|o| o == c.0))
@@ -787,7 +787,7 @@ fn translated_shaders_draw_as_pc_ones() {
                 continue;
             }
         };
-        if let Ok(out) = std::env::var("VICTORY_EMIT_DUMP") {
+        if let Ok(out) = std::env::var("SINOXY_EMIT_DUMP") {
             let stem = name.replace([' ', ','], "_");
             std::fs::write(
                 format!("{out}/{stem}.ps.cdxil"),
@@ -891,7 +891,7 @@ fn translated_mesh_shaders_draw_as_pc_ones() {
         mesh_groups,
     };
     let mut failures = Vec::new();
-    let only = std::env::var("VICTORY_DIFF_ONLY").ok();
+    let only = std::env::var("SINOXY_DIFF_ONLY").ok();
     for &(name, groups, src) in MS_CASES
         .iter()
         .filter(|c| only.as_ref().is_none_or(|o| o == c.0))
@@ -905,7 +905,7 @@ fn translated_mesh_shaders_draw_as_pc_ones() {
             }
         };
         let ps_c = translate(&compile(&console, &dir, src, "mps", "ps_6_5")).unwrap();
-        if let Ok(out) = std::env::var("VICTORY_EMIT_DUMP") {
+        if let Ok(out) = std::env::var("SINOXY_EMIT_DUMP") {
             let stem = name.replace([' ', ','], "_");
             std::fs::write(format!("{out}/{stem}.ms.cdxil"), &console_ms).unwrap();
             std::fs::write(format!("{out}/{stem}.ms.dxil"), &ms_c.dxil).unwrap();
@@ -1173,15 +1173,15 @@ fn translated_compute_matches_pc() {
         groups: [2, 2, 1],
     };
     let mut failures = Vec::new();
-    let only = std::env::var("VICTORY_DIFF_ONLY").ok();
-    let warp = std::env::var("VICTORY_WARP").is_ok_and(|v| v == "1");
+    let only = std::env::var("SINOXY_DIFF_ONLY").ok();
+    let warp = std::env::var("SINOXY_WARP").is_ok_and(|v| v == "1");
     for (name, src) in CS_CASES
         .iter()
         .filter(|c| only.as_ref().is_none_or(|o| o == c.0))
         .filter(|c| warp || !c.0.starts_with("terminates"))
     {
         let console_cs = compile(&console, &dir, src, "cs", "cs_6_5");
-        if let Ok(out) = std::env::var("VICTORY_EMIT_DUMP") {
+        if let Ok(out) = std::env::var("SINOXY_EMIT_DUMP") {
             let stem = name.replace([' ', ','], "_");
             std::fs::write(format!("{out}/{stem}.cs.cdxil"), &console_cs).unwrap();
         }
@@ -1192,7 +1192,7 @@ fn translated_compute_matches_pc() {
                 continue;
             }
         };
-        if let Ok(out) = std::env::var("VICTORY_EMIT_DUMP") {
+        if let Ok(out) = std::env::var("SINOXY_EMIT_DUMP") {
             let stem = name.replace([' ', ','], "_");
             std::fs::write(format!("{out}/{stem}.cs.dxil"), &cs_c.dxil).unwrap();
         }
@@ -1205,7 +1205,7 @@ fn translated_compute_matches_pc() {
         let (root_t, pso_t) = match host.compute_pipeline(&cs_c) {
             Ok(p) => p,
             // WARP runs no fixed wave size of 64.
-            Err(e) if std::env::var("VICTORY_WARP").is_ok_and(|v| v == "1") => {
+            Err(e) if std::env::var("SINOXY_WARP").is_ok_and(|v| v == "1") => {
                 eprintln!("{name}: skipped on WARP ({e})");
                 continue;
             }
