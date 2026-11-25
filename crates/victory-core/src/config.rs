@@ -133,7 +133,7 @@ fn default_dir(name: &str) -> Result<PathBuf> {
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
         .context("cannot determine a user directory; set SINOXY_CACHE_DIR and SINOXY_DATA_DIR")?;
-    Ok(base.join("victory").join(name))
+    Ok(base.join("sinoxy").join(name))
 }
 
 #[cfg(test)]
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn example_config_parses() {
-        let text = include_str!("../../../victory.example.toml");
+        let text = include_str!("../../../sinoxy.example.toml");
         let parsed: FileConfig = toml::from_str(text).unwrap();
         assert!(parsed.paths.game_dir.is_some());
     }
