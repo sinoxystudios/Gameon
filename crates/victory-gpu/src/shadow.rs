@@ -470,7 +470,12 @@ mod card_tests {
 ///   had not received from bytes the card wrote.
 pub(crate) fn relay() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var("SINOXY_RELAY").is_ok_and(|v| v == "1" || v == "2") && !keeps())
+    *ON.get_or_init(|| {
+        std::env::var_os("SINOXY_RELAY").is_none_or(|v| v != "0")
+            && std::env::var_os("SINOXY_LATE_WAIT").is_none_or(|v| v != "0")
+            && std::env::var_os("SINOXY_GPU_TIMING").is_none()
+            && !keeps()
+    })
 }
 
 /// The submission being prepared (its number among those started): what
@@ -958,7 +963,7 @@ unsafe fn copy_wide(src: *const u8, dst: *mut u8, len: usize) {
 /// lists only afterwards).
 pub(crate) fn wide_back() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *ON.get_or_init(|| std::env::var_os("SINOXY_WIDE_BACK").is_some_and(|v| v == "1"))
+    *ON.get_or_init(|| std::env::var_os("SINOXY_WIDE_BACK").is_none_or(|v| v != "0"))
 }
 
 type Job = Box<dyn FnOnce() + Send>;
